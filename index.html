@@ -630,6 +630,9 @@
   var scannerEl=document.getElementById("scanner");
   var videoEl=document.getElementById("video");
   var codeReader=null, scanning=false, paused=false, lastCode="", lastTime=0;
+  var scanTimer=null, scanReader=null, scanHints=null;
+  var scanCanvas=document.createElement("canvas");
+  var scanCtx=scanCanvas.getContext("2d", {willReadFrequently:true});
 
   function hasZXing(){ return (typeof ZXing!=="undefined") && ZXing.BrowserMultiFormatReader; }
 
@@ -637,28 +640,68 @@
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
       toast("この環境ではカメラを使えません。検索をご利用ください"); openAddSheet(true); return;
     }
-    if(!hasZXing()){ toast("スキャナーを初期化できませんでした。検索をどうぞ"); openAddSheet(true); return; }
+    if(!hasZXing() || !ZXing.MultiFormatReader){ toast("スキャナーを初期化できませんでした。検索をどうぞ"); openAddSheet(true); return; }
     scannerEl.classList.add("on");
     setScanStatus("");
     paused=false; lastCode="";
-    try{
-      var hints=new Map();
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8]);
-      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-      codeReader=new ZXing.BrowserMultiFormatReader(hints, {delayBetweenScanAttempts:120});
-    }catch(e){ codeReader=new ZXing.BrowserMultiFormatReader(); }
-    var constraints={ audio:false, video:{ facingMode:{ideal:"environment"}, width:{ideal:1920}, height:{ideal:1080}, advanced:[{focusMode:"continuous"}] } };
-    codeReader.decodeFromConstraints(constraints, videoEl, onDecode)
-      .then(function(){ scanning=true; })
-      .catch(function(err){
-        codeReader.decodeFromVideoDevice(null, videoEl, onDecode)
-          .then(function(){ scanning=true; })
-          .catch(function(e2){
-            stopScan();
-            toast("カメラを起動できませんでした（権限をご確認ください）。検索をどうぞ");
-            openAddSheet(true);
-          });
+    scanHints=new Map();
+    scanHints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8]);
+    scanHints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    scanReader=new ZXing.MultiFormatReader();
+    try{ scanReader.setHints(scanHints); }catch(e){}
+    var hi={ audio:false, video:{ facingMode:{ideal:"environment"}, width:{ideal:1920}, height:{ideal:1080}, advanced:[{focusMode:"continuous"}] } };
+    var lo={ audio:false, video:{ facingMode:{ideal:"environment"} } };
+    function attach(stream){
+      if(videoEl.srcObject){ try{ videoEl.srcObject.getTracks().forEach(function(t){t.stop();}); }catch(e){} }
+      videoEl.srcObject=stream;
+      videoEl.setAttribute("playsinline",""); videoEl.muted=true;
+      // Try to boost focus/zoom where supported (mainly Android; iOS ignores gracefully)
+      try{
+        var tr=stream.getVideoTracks()[0], caps=tr.getCapabilities?tr.getCapabilities():{};
+        var adv=[];
+        if(caps.focusMode && caps.focusMode.indexOf&&caps.focusMode.indexOf("continuous")>=0) adv.push({focusMode:"continuous"});
+        if(caps.zoom && caps.zoom.max){ adv.push({zoom: Math.min(caps.zoom.max, Math.max(caps.zoom.min||1, 2))}); }
+        if(adv.length){ tr.applyConstraints({advanced:adv}).catch(function(){}); }
+      }catch(e){}
+      var p=videoEl.play(); if(p&&p.catch)p.catch(function(){});
+      scanning=true;
+      startDecodeLoop();
+    }
+    navigator.mediaDevices.getUserMedia(hi)
+      .then(attach)
+      .catch(function(){
+        navigator.mediaDevices.getUserMedia(lo).then(attach).catch(function(){
+          stopScan();
+          toast("カメラを起動できませんでした（権限をご確認ください）。検索をどうぞ");
+          openAddSheet(true);
+        });
       });
+  }
+  function tryRegion(sx,sy,cw,ch){
+    if(cw<20||ch<20) return false;
+    try{
+      scanCanvas.width=cw; scanCanvas.height=ch;
+      scanCtx.drawImage(videoEl, sx,sy,cw,ch, 0,0, cw,ch);
+      var src=new ZXing.HTMLCanvasElementLuminanceSource(scanCanvas);
+      var bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
+      var res=scanReader.decode(bmp, scanHints);
+      if(res){ onDecode(res); return true; }
+    }catch(e){ try{ scanReader.reset(); }catch(_){} }
+    return false;
+  }
+  function startDecodeLoop(){
+    clearInterval(scanTimer);
+    scanTimer=setInterval(function(){
+      if(!scanning || paused) return;
+      var vw=videoEl.videoWidth, vh=videoEl.videoHeight;
+      if(!vw || !vh) return;
+      // 1) center strip (digital zoom into the reticle area) — best for iOS
+      var cw=Math.round(vw*0.88), ch=Math.round(vh*0.5);
+      var sx=Math.round((vw-cw)/2), sy=Math.round((vh-ch)/2);
+      if(tryRegion(sx,sy,cw,ch)) return;
+      // 2) whole frame fallback (barcode off-center)
+      tryRegion(0,0,vw,vh);
+    }, 170);
   }
   function onDecode(result, err){
     if(paused || !result) return;
@@ -689,6 +732,7 @@
   }
   function stopScan(){
     paused=true; scanning=false;
+    clearInterval(scanTimer); scanTimer=null;
     try{ if(codeReader){ codeReader.reset(); } }catch(e){}
     try{
       if(videoEl.srcObject){ videoEl.srcObject.getTracks().forEach(function(tr){tr.stop();}); videoEl.srcObject=null; }
@@ -761,21 +805,33 @@
   }
   (function(){
     var mainEl=document.querySelector("main"); if(!mainEl) return;
-    var sx=0, sy=0, tracking=false;
+    var sx=0, sy=0, tracking=false, fired=false;
+    var MOVE_TRIGGER=34;   // fire mid-gesture once finger moves this far horizontally
+    var END_TRIGGER=26;    // gentle/short swipe caught on release
+    var RATIO=1.1;         // how much more horizontal than vertical it must be
     mainEl.addEventListener("touchstart",function(e){
-      tracking=false;
+      tracking=false; fired=false;
       if(document.getElementById("overlay").classList.contains("on")) return;
       if(document.getElementById("scanner").classList.contains("on")) return;
       if(e.target && e.target.id==="search") return;
       if(!e.touches || e.touches.length!==1) return;
       sx=e.touches[0].clientX; sy=e.touches[0].clientY; tracking=true;
     },{passive:true});
+    mainEl.addEventListener("touchmove",function(e){
+      if(!tracking || fired) return;
+      var t=e.touches && e.touches[0]; if(!t) return;
+      var dx=t.clientX-sx, dy=t.clientY-sy;
+      if(Math.abs(dx)>=MOVE_TRIGGER && Math.abs(dx)>Math.abs(dy)*RATIO){
+        fired=true; shiftTab(dx<0 ? 1 : -1);
+      }
+    },{passive:true});
     mainEl.addEventListener("touchend",function(e){
-      if(!tracking) return; tracking=false;
+      if(!tracking || fired){ tracking=false; return; }
+      tracking=false;
       var t=(e.changedTouches && e.changedTouches[0]); if(!t) return;
       var dx=t.clientX-sx, dy=t.clientY-sy;
-      if(Math.abs(dx)<55) return;
-      if(Math.abs(dx)<Math.abs(dy)*1.6) return;
+      if(Math.abs(dx)<END_TRIGGER) return;
+      if(Math.abs(dx)<Math.abs(dy)*RATIO) return;
       shiftTab(dx<0 ? 1 : -1);
     },{passive:true});
   })();
