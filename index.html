@@ -59,6 +59,11 @@
   .search svg{flex:0 0 auto;opacity:.5}
 
   .grid{display:grid;grid-template-columns:1fr;gap:10px}
+  .grid.slide-r{animation:slideR .24s cubic-bezier(.22,.61,.36,1)}
+  .grid.slide-l{animation:slideL .24s cubic-bezier(.22,.61,.36,1)}
+  @keyframes slideR{from{transform:translateX(46px);opacity:0}to{transform:none;opacity:1}}
+  @keyframes slideL{from{transform:translateX(-46px);opacity:0}to{transform:none;opacity:1}}
+  @media (prefers-reduced-motion: reduce){ .grid.slide-r,.grid.slide-l{animation:none} }
   .card{
     display:flex;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
     padding:12px;box-shadow:var(--shadow);position:relative;overflow:hidden;
@@ -642,7 +647,7 @@
       hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
       codeReader=new ZXing.BrowserMultiFormatReader(hints, {delayBetweenScanAttempts:120});
     }catch(e){ codeReader=new ZXing.BrowserMultiFormatReader(); }
-    var constraints={ audio:false, video:{ facingMode:{ideal:"environment"} } };
+    var constraints={ audio:false, video:{ facingMode:{ideal:"environment"}, width:{ideal:1920}, height:{ideal:1080}, advanced:[{focusMode:"continuous"}] } };
     codeReader.decodeFromConstraints(constraints, videoEl, onDecode)
       .then(function(){ scanning=true; })
       .catch(function(err){
@@ -727,16 +732,25 @@
 
   /* ---------- events ---------- */
   document.getElementById("tabs").addEventListener("click",function(e){
-    var t=e.target.closest(".tab"); if(!t) return; state.tab=t.dataset.status; state.q=""; document.getElementById("search").value=""; render();
+    var t=e.target.closest(".tab"); if(!t) return; gotoTab(t.dataset.status);
   });
 
   /* ---------- Swipe left/right to change shelf ---------- */
   var SHELF_ORDER=["want","stack","reading","done"];
+  function animateList(dir){
+    var el=document.getElementById("list"); if(!el) return;
+    el.classList.remove("slide-r","slide-l");
+    void el.offsetWidth; // force reflow so the animation restarts
+    el.classList.add(dir>0 ? "slide-r" : "slide-l");
+  }
   function gotoTab(status){
     if(!status || status===state.tab) return;
+    var from=SHELF_ORDER.indexOf(state.tab), to=SHELF_ORDER.indexOf(status);
+    var dir=(to>=0 && from>=0) ? (to>from?1:-1) : 1;
     state.tab=status; state.q="";
     var se=document.getElementById("search"); if(se) se.value="";
     render();
+    animateList(dir);
     var tb=document.querySelector('.tab[data-status="'+status+'"]');
     if(tb && tb.scrollIntoView){ try{ tb.scrollIntoView({inline:"center",block:"nearest"}); }catch(e){} }
   }
