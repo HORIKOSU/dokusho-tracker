@@ -33,20 +33,22 @@
   .brand h1{font-size:19px;margin:0;font-weight:800;letter-spacing:.02em}
   .brand .total{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600}
 
-  .tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:0}
-  .tabs::-webkit-scrollbar{display:none}
+  .tabs{display:flex;gap:6px;padding:2px 0}
   .tab{
-    flex:0 0 auto; border:none;background:transparent;cursor:pointer;
-    padding:9px 12px 12px; font-size:14px;font-weight:700;color:var(--muted);
-    border-bottom:3px solid transparent; white-space:nowrap; display:flex;align-items:center;gap:6px;
-    font-family:inherit;
+    flex:1 1 0; min-width:0; border:none;cursor:pointer;font-family:inherit;
+    padding:9px 4px; border-radius:13px; background:var(--accent-soft); color:var(--accent-dk);
+    font-size:12.5px;font-weight:800; line-height:1.15;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    -webkit-tap-highlight-color:transparent; transition:background .15s,color .15s,transform .06s;
   }
+  .tab:active{transform:scale(.95)}
+  .tab .lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   .tab .cnt{
-    display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;
-    border-radius:999px;background:var(--accent-soft);color:var(--accent-dk);font-size:11px;font-weight:800;
+    display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:18px;padding:0 6px;
+    border-radius:999px;background:rgba(120,90,60,.14);color:inherit;font-size:11px;font-weight:800;
   }
-  .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
-  .tab[aria-selected="true"] .cnt{background:var(--accent);color:#fff}
+  .tab[aria-selected="true"]{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(150,110,70,.28)}
+  .tab[aria-selected="true"] .cnt{background:rgba(255,255,255,.3);color:#fff}
 
   main{max-width:720px;margin:0 auto;padding:14px 14px 0}
 
@@ -214,10 +216,10 @@
     <span class="total" id="totalCount"></span>
   </div>
   <div class="tabs" id="tabs" role="tablist">
-    <button class="tab" role="tab" data-status="want"    aria-selected="true">読みたい本 <span class="cnt" id="cnt-want">0</span></button>
-    <button class="tab" role="tab" data-status="stack"   aria-selected="false">積読本 <span class="cnt" id="cnt-stack">0</span></button>
-    <button class="tab" role="tab" data-status="reading" aria-selected="false">読んでる本 <span class="cnt" id="cnt-reading">0</span></button>
-    <button class="tab" role="tab" data-status="done"    aria-selected="false">読んだ本 <span class="cnt" id="cnt-done">0</span></button>
+    <button class="tab" role="tab" data-status="want"    aria-selected="true"><span class="lbl">読みたい本</span><span class="cnt" id="cnt-want">0</span></button>
+    <button class="tab" role="tab" data-status="stack"   aria-selected="false"><span class="lbl">積読本</span><span class="cnt" id="cnt-stack">0</span></button>
+    <button class="tab" role="tab" data-status="reading" aria-selected="false"><span class="lbl">読んでる本</span><span class="cnt" id="cnt-reading">0</span></button>
+    <button class="tab" role="tab" data-status="done"    aria-selected="false"><span class="lbl">読んだ本</span><span class="cnt" id="cnt-done">0</span></button>
   </div>
 </header>
 
@@ -798,49 +800,12 @@
     var tb=document.querySelector('.tab[data-status="'+status+'"]');
     if(tb && tb.scrollIntoView){ try{ tb.scrollIntoView({inline:"center",block:"nearest"}); }catch(e){} }
   }
-  function shiftTab(dir){
-    var i=SHELF_ORDER.indexOf(state.tab); if(i<0) i=0;
-    var n=i+dir; if(n<0 || n>=SHELF_ORDER.length) return;
-    gotoTab(SHELF_ORDER[n]);
-  }
-  (function(){
-    var mainEl=document.querySelector("main"); if(!mainEl) return;
-    var sx=0, sy=0, tracking=false, fired=false;
-    var MOVE_TRIGGER=34;   // fire mid-gesture once finger moves this far horizontally
-    var END_TRIGGER=26;    // gentle/short swipe caught on release
-    var RATIO=1.1;         // how much more horizontal than vertical it must be
-    mainEl.addEventListener("touchstart",function(e){
-      tracking=false; fired=false;
-      if(document.getElementById("overlay").classList.contains("on")) return;
-      if(document.getElementById("scanner").classList.contains("on")) return;
-      if(e.target && e.target.id==="search") return;
-      if(!e.touches || e.touches.length!==1) return;
-      sx=e.touches[0].clientX; sy=e.touches[0].clientY; tracking=true;
-    },{passive:true});
-    mainEl.addEventListener("touchmove",function(e){
-      if(!tracking || fired) return;
-      var t=e.touches && e.touches[0]; if(!t) return;
-      var dx=t.clientX-sx, dy=t.clientY-sy;
-      if(Math.abs(dx)>=MOVE_TRIGGER && Math.abs(dx)>Math.abs(dy)*RATIO){
-        fired=true; shiftTab(dx<0 ? 1 : -1);
-      }
-    },{passive:true});
-    mainEl.addEventListener("touchend",function(e){
-      if(!tracking || fired){ tracking=false; return; }
-      tracking=false;
-      var t=(e.changedTouches && e.changedTouches[0]); if(!t) return;
-      var dx=t.clientX-sx, dy=t.clientY-sy;
-      if(Math.abs(dx)<END_TRIGGER) return;
-      if(Math.abs(dx)<Math.abs(dy)*RATIO) return;
-      shiftTab(dx<0 ? 1 : -1);
-    },{passive:true});
-  })();
   document.getElementById("search").addEventListener("input",function(e){ state.q=e.target.value; render(); });
   document.getElementById("fab").addEventListener("click",function(){ openAddSheet(false); });
   document.getElementById("scanClose").addEventListener("click",function(){ stopScan(); });
   document.getElementById("scanManual").addEventListener("click",function(){ stopScan(); openAddSheet(true); });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, shiftTab:shiftTab, gotoTab:gotoTab };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab };
 
   render();
 })();
