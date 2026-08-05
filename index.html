@@ -420,12 +420,18 @@
   }
 
   function coverNode(b, cls){
-    if(b.cover){
-      var img=document.createElement("img"); img.className="cover"+(cls?(" "+cls):""); img.src=b.cover; img.alt=""; img.loading="lazy";
-      img.onerror=function(){ var ph=phCover(cls); img.parentNode && img.parentNode.replaceChild(ph,img); };
-      return img;
-    }
-    return phCover(cls);
+    var isbn=(b.isbn||"").replace(/[^0-9Xx]/g,"");
+    var srcs=[];
+    if(b.cover) srcs.push(b.cover);
+    if(isbn) srcs.push("https://covers.openlibrary.org/b/isbn/"+isbn+"-M.jpg?default=false");
+    if(!srcs.length) return phCover(cls);
+    var img=document.createElement("img");
+    img.className="cover"+(cls?(" "+cls):"");
+    img.alt=""; img.loading="lazy"; img.referrerPolicy="no-referrer";
+    var idx=0;
+    img.onerror=function(){ idx++; if(idx<srcs.length){ img.src=srcs[idx]; } else { var ph=phCover(cls); img.parentNode && img.parentNode.replaceChild(ph,img); } };
+    img.src=srcs[0];
+    return img;
   }
   function phCover(cls){ var d=document.createElement("div"); d.className="cover ph"+(cls?(" "+cls):""); d.textContent="📕"; return d; }
 
@@ -709,12 +715,48 @@
   document.getElementById("tabs").addEventListener("click",function(e){
     var t=e.target.closest(".tab"); if(!t) return; state.tab=t.dataset.status; state.q=""; document.getElementById("search").value=""; render();
   });
+
+  /* ---------- Swipe left/right to change shelf ---------- */
+  var SHELF_ORDER=["want","stack","reading","done"];
+  function gotoTab(status){
+    if(!status || status===state.tab) return;
+    state.tab=status; state.q="";
+    var se=document.getElementById("search"); if(se) se.value="";
+    render();
+    var tb=document.querySelector('.tab[data-status="'+status+'"]');
+    if(tb && tb.scrollIntoView){ try{ tb.scrollIntoView({inline:"center",block:"nearest"}); }catch(e){} }
+  }
+  function shiftTab(dir){
+    var i=SHELF_ORDER.indexOf(state.tab); if(i<0) i=0;
+    var n=i+dir; if(n<0 || n>=SHELF_ORDER.length) return;
+    gotoTab(SHELF_ORDER[n]);
+  }
+  (function(){
+    var mainEl=document.querySelector("main"); if(!mainEl) return;
+    var sx=0, sy=0, tracking=false;
+    mainEl.addEventListener("touchstart",function(e){
+      tracking=false;
+      if(document.getElementById("overlay").classList.contains("on")) return;
+      if(document.getElementById("scanner").classList.contains("on")) return;
+      if(e.target && e.target.id==="search") return;
+      if(!e.touches || e.touches.length!==1) return;
+      sx=e.touches[0].clientX; sy=e.touches[0].clientY; tracking=true;
+    },{passive:true});
+    mainEl.addEventListener("touchend",function(e){
+      if(!tracking) return; tracking=false;
+      var t=(e.changedTouches && e.changedTouches[0]); if(!t) return;
+      var dx=t.clientX-sx, dy=t.clientY-sy;
+      if(Math.abs(dx)<55) return;
+      if(Math.abs(dx)<Math.abs(dy)*1.6) return;
+      shiftTab(dx<0 ? 1 : -1);
+    },{passive:true});
+  })();
   document.getElementById("search").addEventListener("input",function(e){ state.q=e.target.value; render(); });
   document.getElementById("fab").addEventListener("click",function(){ openAddSheet(false); });
   document.getElementById("scanClose").addEventListener("click",function(){ stopScan(); });
   document.getElementById("scanManual").addEventListener("click",function(){ stopScan(); openAddSheet(true); });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, shiftTab:shiftTab, gotoTab:gotoTab };
 
   render();
 })();
