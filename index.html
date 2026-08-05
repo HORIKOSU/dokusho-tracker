@@ -357,7 +357,9 @@
       document.head.appendChild(s);
     });
   }
+  function gbKey(){ try{ return (localStorage.getItem("gb_api_key")||"").trim(); }catch(e){ return ""; } }
   function gbFetch(url){
+    var k=gbKey(); if(k){ url += (url.indexOf("?")>=0?"&":"?")+"key="+encodeURIComponent(k); }
     return fetch(url).then(function(r){ if(!r.ok) throw new Error("http "+r.status); return r.json(); })
       .catch(function(){ return jsonp(url); })
       .then(function(j){ if(j && j.error){ throw new Error("api "+(j.error.code||"")); } return j; });
@@ -544,10 +546,19 @@
        '<button class="btn primary sbtn" id="searchBtn">検索</button></div></div>';
     h+='<div id="results"></div>';
     h+='<button class="btn ghost" id="cancelBtn">閉じる</button>';
+    h+='<div style="text-align:center;margin-top:6px"><a href="#" id="keyLink" style="font-size:12px;color:#9a8c7a;text-decoration:underline">検索がうまくいかない時（APIキー設定）</a></div>';
     openSheet(h);
     var inp=document.getElementById("qInput");
     document.getElementById("camBtn").onclick=function(){ closeSheet(); startScan(); };
     document.getElementById("cancelBtn").onclick=closeSheet;
+    document.getElementById("keyLink").onclick=function(e){ e.preventDefault();
+      var cur=gbKey();
+      var v=window.prompt("Google Books APIキーを貼り付けてください。\n（空欄でOKを押すと解除します）\n\n取得方法は付属の手順を参照。", cur);
+      if(v===null) return;
+      v=(v||"").trim();
+      try{ if(v){ localStorage.setItem("gb_api_key",v); toast("APIキーを保存しました"); } else { localStorage.removeItem("gb_api_key"); toast("APIキーを解除しました"); } }
+      catch(err){ toast("保存に失敗しました"); }
+    };
     document.getElementById("searchBtn").onclick=runSearch;
     inp.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); runSearch(); } });
     if(focusSearch){ setTimeout(function(){ try{inp.focus();}catch(e){} },180); }
@@ -570,7 +581,7 @@
       // Keyword / title search -> candidate list
       box.innerHTML='<div class="searching"><span class="spinner"></span> 検索中…</div>';
       searchBooks(raw).then(function(list){ busy(false); renderResults(box,list,raw); })
-        .catch(function(err){ busy(false); var rc=(err&&err.message)?String(err.message):'unknown'; box.innerHTML='<div class="searching">検索でエラーが発生しました（詳細: '+rc+'）。<br>この画面（プレビュー）では外部接続が制限されます。ダウンロードした「260805_読書管理ツール.html」をブラウザで直接開くか、HTTPSで公開してお試しください。</div>'; });
+        .catch(function(err){ busy(false); var rc=(err&&err.message)?String(err.message):'unknown'; var is429=/429/.test(rc); var extra= is429 ? 'Google側のアクセス上限に達しました（共有回線で起きやすい）。下の「APIキー設定」から無料のGoogle Books APIキーを設定すると解決します。' : 'ダウンロードしたファイルをブラウザで直接開くか、HTTPSで公開してお試しください。'; box.innerHTML='<div class="searching">検索でエラーが発生しました（詳細: '+rc+'）。<br>'+extra+'</div>'; });
     }
     function renderResults(box, list, q){
       if(!list || !list.length){
