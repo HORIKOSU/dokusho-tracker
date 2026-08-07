@@ -15,7 +15,7 @@
     --radius:16px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;padding:0}
+  html,body{margin:0;padding:0;overflow-x:hidden;width:100%;max-width:100%}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
     background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased;
@@ -50,7 +50,7 @@
   .tab[aria-selected="true"]{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(150,110,70,.28)}
   .tab[aria-selected="true"] .cnt{background:rgba(255,255,255,.3);color:#fff}
 
-  main{max-width:720px;margin:0 auto;padding:14px 14px 0}
+  main{max-width:720px;margin:0 auto;padding:14px 14px 0;overflow-x:hidden}
 
   .toolbar{display:flex;gap:8px;margin:4px 2px 14px}
   .search{
@@ -61,10 +61,8 @@
   .search svg{flex:0 0 auto;opacity:.5}
 
   .grid{display:grid;grid-template-columns:1fr;gap:10px}
-  .grid.slide-r{animation:slideR .24s cubic-bezier(.22,.61,.36,1)}
-  .grid.slide-l{animation:slideL .24s cubic-bezier(.22,.61,.36,1)}
-  @keyframes slideR{from{transform:translateX(46px);opacity:0}to{transform:none;opacity:1}}
-  @keyframes slideL{from{transform:translateX(-46px);opacity:0}to{transform:none;opacity:1}}
+  .grid.slide-r,.grid.slide-l{animation:shelfIn .18s ease}
+  @keyframes shelfIn{from{opacity:.35}to{opacity:1}}
   @media (prefers-reduced-motion: reduce){ .grid.slide-r,.grid.slide-l{animation:none} }
   .card{
     display:flex;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
@@ -566,7 +564,9 @@
   /* ---------- Add sheet: camera + title/ISBN search ---------- */
   function openAddSheet(focusSearch){
     var h='<div class="grip"></div><h2>本を追加</h2>';
-    h+='<button class="btn primary" id="camBtn">📷 カメラでISBNを読み取る</button>';
+    h+='<button class="btn primary" id="photoBtn">📷 写真を撮ってISBNを読み取る</button>';
+    h+='<input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none">';
+    h+='<button class="btn ghost" id="camBtn" style="margin-top:8px">🎥 リアルタイムカメラで読み取る</button>';
     h+='<div class="or"><span>または</span></div>';
     h+='<div class="field"><label>タイトル・著者・ISBNで検索</label>'+
        '<div class="search-row"><input id="qInput" placeholder="例：リーダブルコード ／ 9784..." autocomplete="off" enterkeyhint="search">'+
@@ -577,6 +577,25 @@
     openSheet(h);
     var inp=document.getElementById("qInput");
     document.getElementById("camBtn").onclick=function(){ closeSheet(); startScan(); };
+    document.getElementById("photoBtn").onclick=function(){ document.getElementById("photoInput").click(); };
+    document.getElementById("photoInput").onchange=function(e){ var f=e.target.files&&e.target.files[0]; if(f) handlePhoto(f); e.target.value=""; };
+    function handlePhoto(file){
+      var box=document.getElementById("results");
+      box.innerHTML='<div class="searching"><span class="spinner"></span> 画像を解析中…</div>';
+      var url=URL.createObjectURL(file);
+      var img=new Image();
+      img.onload=function(){
+        var code=decodeFromImage(img); try{URL.revokeObjectURL(url);}catch(e){}
+        if(!code){ box.innerHTML='<div class="searching">写真からバーコードを読み取れませんでした。<br>明るい場所で、バーコードが画面いっぱいに・まっすぐ写るように撮り直すか、下の検索欄にISBNの数字を入力してください。</div>'; return; }
+        var isbn=normIsbn(code);
+        if(!isBookIsbn(isbn)){ box.innerHTML='<div class="searching">読み取れましたが本のISBNではないようです（'+esc(code)+'）。<br>978から始まる上側のバーコードを大きく写してください。</div>'; return; }
+        box.innerHTML='<div class="searching"><span class="spinner"></span> 情報を取得中…</div>';
+        lookupBook(isbn).then(function(meta){ presentFound(meta,{back:reopen}); })
+          .catch(function(){ presentFound({isbn:(isbn.length===10?isbn10to13(isbn):isbn)},{back:reopen}); });
+      };
+      img.onerror=function(){ try{URL.revokeObjectURL(url);}catch(e){} box.innerHTML='<div class="searching">画像を読み込めませんでした。もう一度お試しください。</div>'; };
+      img.src=url;
+    }
     document.getElementById("cancelBtn").onclick=closeSheet;
     document.getElementById("keyLink").onclick=function(e){ e.preventDefault();
       var cur=gbKey();
@@ -705,6 +724,34 @@
       tryRegion(0,0,vw,vh);
     }, 170);
   }
+  // Decode a still photo (iPhone-reliable): try full frame + several center bands, at a sane scale.
+  function decodeFromImage(img){
+    if(!ZXing.MultiFormatReader) return "";
+    var iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height;
+    if(!iw||!ih) return "";
+    var reader=new ZXing.MultiFormatReader();
+    var hints=new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8]);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    try{ reader.setHints(hints); }catch(e){}
+    var maxDim=1800, scale=Math.min(1, maxDim/Math.max(iw,ih));
+    // regions as [x,y,w,h] fractions: full, then horizontal bands scanning down the image
+    var regions=[[0,0,1,1],[0.04,0.30,0.92,0.40],[0.04,0.08,0.92,0.34],[0.04,0.56,0.92,0.36],[0.15,0.35,0.70,0.30]];
+    for(var i=0;i<regions.length;i++){
+      var r=regions[i];
+      var sx=Math.round(iw*r[0]), sy=Math.round(ih*r[1]), sw=Math.round(iw*r[2]), sh=Math.round(ih*r[3]);
+      var cw=Math.max(1,Math.round(sw*scale)), ch=Math.max(1,Math.round(sh*scale));
+      try{
+        scanCanvas.width=cw; scanCanvas.height=ch;
+        scanCtx.drawImage(img, sx,sy,sw,sh, 0,0, cw,ch);
+        var src=new ZXing.HTMLCanvasElementLuminanceSource(scanCanvas);
+        var bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
+        var res=reader.decode(bmp, hints);
+        if(res && res.getText) return res.getText();
+      }catch(e){ try{ reader.reset(); }catch(_){} }
+    }
+    return "";
+  }
   function onDecode(result, err){
     if(paused || !result) return;
     var text=result.getText ? result.getText() : (result.text||"");
@@ -805,7 +852,7 @@
   document.getElementById("scanClose").addEventListener("click",function(){ stopScan(); });
   document.getElementById("scanManual").addEventListener("click",function(){ stopScan(); openAddSheet(true); });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage };
 
   render();
 })();
