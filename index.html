@@ -319,14 +319,14 @@
 
   /* ---------- Skill dashboard (from 読んだ本) ---------- */
   var SKILLS=[
-    {key:'business', label:'ビジネス・経営', icon:'💼', color:'#b5713f'},
-    {key:'it',       label:'IT・技術',      icon:'💻', color:'#5b8fb0'},
-    {key:'marketing',label:'マーケ・営業',  icon:'📣', color:'#c98a3a'},
-    {key:'design',   label:'デザイン',      icon:'🎨', color:'#c56b8a'},
-    {key:'money',    label:'お金・投資',    icon:'💰', color:'#4c9a76'},
-    {key:'self',     label:'自己啓発',      icon:'🌱', color:'#8a9a4c'},
-    {key:'liberal',  label:'教養・科学',    icon:'📚', color:'#7a6cc0'},
-    {key:'novel',    label:'文学・小説',    icon:'📖', color:'#b06a4f'}
+    {key:'business', label:'ビジネス・経営', short:'経営',   icon:'💼', color:'#b5713f'},
+    {key:'it',       label:'IT・技術',      short:'IT',     icon:'💻', color:'#5b8fb0'},
+    {key:'marketing',label:'マーケ・営業',  short:'マーケ', icon:'📣', color:'#c98a3a'},
+    {key:'design',   label:'デザイン',      short:'デザイン',icon:'🎨', color:'#c56b8a'},
+    {key:'money',    label:'お金・投資',    short:'お金',   icon:'💰', color:'#4c9a76'},
+    {key:'self',     label:'自己啓発',      short:'自己啓発',icon:'🌱', color:'#8a9a4c'},
+    {key:'liberal',  label:'教養・科学',    short:'教養',   icon:'📚', color:'#7a6cc0'},
+    {key:'novel',    label:'文学・小説',    short:'文学',   icon:'📖', color:'#b06a4f'}
   ];
   function skillOf(k){ for(var i=0;i<SKILLS.length;i++){ if(SKILLS[i].key===k) return SKILLS[i]; } return SKILLS[6]; }
   // keyword rules, checked in order; first hit wins; fallback = liberal
@@ -341,6 +341,7 @@
     {key:'liberal',   kw:['science','history','philosophy','mathematics','physics','歴史','哲学','科学','教養','数学','物理','化学','生物','政治','宗教','地理','医学','雑学','サイエンス','社会学']}
   ];
   function classifyBook(b){
+    if(b.aiGenre) return b.aiGenre;
     var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.publisher||'')+' '+(b.desc||'')).toLowerCase();
     // AI books always go to IT・技術 (before money/finance etc.)
     if(/(^|[^a-z0-9])ai([^a-z0-9]|$)/.test(hay) || hay.indexOf('生成ai')>=0 || hay.indexOf('chatgpt')>=0 || hay.indexOf('人工知能')>=0 || hay.indexOf('機械学習')>=0 || hay.indexOf('ディープラーニング')>=0 || hay.indexOf('プロンプト')>=0 || hay.indexOf('llm')>=0) return 'it';
@@ -351,25 +352,26 @@
     return 'liberal';
   }
   function computeSkills(books){
-    var counts={}; SKILLS.forEach(function(s){counts[s.key]=0;});
+    var groups={}; SKILLS.forEach(function(s){ groups[s.key]=[]; });
     var total=0;
     (books||[]).forEach(function(b){
       if(b.status!=='done') return;
-      var g=classifyBook(b);
-      if(counts[g]==null) g='liberal';
-      counts[g]++; total++;
+      var g=classifyBook(b); if(groups[g]==null) g='liberal';
+      groups[g].push(b); total++;
     });
-    return {counts:counts, total:total};
+    var counts={}, pct={};
+    SKILLS.forEach(function(s){ counts[s.key]=groups[s.key].length; pct[s.key]=skillPctFromBooks(groups[s.key]); });
+    return {counts:counts, pct:pct, groups:groups, total:total};
   }
-  function skillLevel(n){
-    if(n>=20) return {lv:5,name:'達人'};
-    if(n>=10) return {lv:4,name:'上級'};
-    if(n>=6)  return {lv:3,name:'中級'};
-    if(n>=3)  return {lv:2,name:'初級'};
-    if(n>=1)  return {lv:1,name:'入門'};
+  // Level from the depth-based gauge % (shared look with the coverage map)
+  function levelFromPct(p){
+    if(p>=90) return {lv:5,name:'達人'};
+    if(p>=70) return {lv:4,name:'上級'};
+    if(p>=45) return {lv:3,name:'中級'};
+    if(p>=20) return {lv:2,name:'初級'};
+    if(p>0)   return {lv:1,name:'入門'};
     return {lv:0,name:'未開拓'};
   }
-  function masteryPct(n){ return Math.max(0, Math.min(100, Math.round(n/12*100))); }
 
   /* ---------- Comprehensive business-skill coverage map ---------- */
   var BIZ_DOMAINS=[
@@ -503,6 +505,7 @@
     return out;
   })();
   function mapToBizSkill(b){
+    if(b.aiSkill) return b.aiSkill;
     var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.publisher||'')+' '+(b.desc||'')).toLowerCase();
     // AI books route to the AI・テクノベート skills first (before finance etc.)
     if(hay.indexOf('生成ai')>=0||hay.indexOf('chatgpt')>=0||hay.indexOf('プロンプト')>=0||hay.indexOf('llm')>=0||hay.indexOf('大規模言語モデル')>=0) return 'te_genai';
@@ -516,6 +519,7 @@
   }
   // Estimate a book's depth/level from title + description + page count
   function bookLevel(b){
+    if(b.aiLevel){ var wa=(b.aiLevel==='専門')?2.4:(b.aiLevel==='入門'?1.0:1.6); var pg2=b.pages||0; if(pg2>=380)wa+=0.3; else if(pg2>0&&pg2<=140)wa=Math.max(0.8,wa-0.3); return {w:wa,name:b.aiLevel}; }
     var hay=((b.title||'')+' '+(b.desc||'')+' '+(b.catz||'')).toLowerCase();
     var adv=['実践','応用','理論','体系','大全','教科書','徹底','専門','上級','ハンドブック','実務','完全版','エキスパート','プロフェッショナル','図鑑'];
     var beg=['入門','はじめて','初めて','基礎','図解','マンガ','まんが','さるでも','超入門','1年生','やさしい','面白いほど','ゼロから','超基礎','これだけ','いちばんやさしい','たった'];
@@ -573,16 +577,21 @@
     return h;
   }
   // Search-time preview: which skill a book covers + how much it raises the gauge
-  function bizPreview(meta){
-    var k=mapToBizSkill(meta), lvl=bookLevel(meta);
-    if(!k){ return '<div class="sk-prev out">📊 ビジネススキル判定：該当なし（教養など）／レベル: '+lvl.name+'</div>'; }
+  function bizPreview(b){
+    var k=mapToBizSkill(b), lvl=bookLevel(b);
+    if(!k){ return '<div class="sk-prev out">📊 この本で学べるビジネススキル：該当なし（教養・小説など）／レベル '+lvl.name+'</div>'; }
     var sLabel='', dLabel='';
     BIZ_DOMAINS.forEach(function(d){ d.skills.forEach(function(s){ if(s.key===k){ sLabel=s.label; dLabel=d.label; } }); });
-    var cur=state.books.filter(function(b){ return b.status==='done' && (b.bizskill||mapToBizSkill(b))===k; });
-    var curP=skillPctFromBooks(cur), newP=skillPctFromBooks(cur.concat([meta])), delta=Math.max(0,newP-curP);
+    var done=state.books.filter(function(x){ return x.status==='done' && (x.bizskill||mapToBizSkill(x))===k; });
+    var head='<div class="sk-prev-t">📊 学べるスキル：'+esc(dLabel)+' ＞ '+esc(sLabel)+'</div>';
+    if(b.status==='done'){
+      var cur=skillPctFromBooks(done);
+      return '<div class="sk-prev">'+head+'<div class="sk-prev-m">レベル <b>'+lvl.name+'</b>　このスキルの現在地 <b>'+cur+'%</b>（この本も貢献中）</div></div>';
+    }
+    var base=done.filter(function(x){ return x.id!==b.id; });
+    var curP=skillPctFromBooks(base), newP=skillPctFromBooks(base.concat([b])), delta=Math.max(0,newP-curP);
     var note=delta>=15?'伸びしろ大':(delta>=5?'そこそこ伸びる':'十分カバー済み');
-    return '<div class="sk-prev"><div class="sk-prev-t">📊 '+esc(dLabel)+' ＞ '+esc(sLabel)+'</div>'+
-           '<div class="sk-prev-m">レベル <b>'+lvl.name+'</b>　ゲージ <b>+'+delta+'%</b>（'+curP+'%→'+newP+'%）　<span class="sk-prev-note">'+note+'</span></div></div>';
+    return '<div class="sk-prev">'+head+'<div class="sk-prev-m">レベル <b>'+lvl.name+'</b>　読了で <b>+'+delta+'% レベルアップ</b>（'+curP+'%→'+newP+'%）<span class="sk-prev-note">'+note+'</span></div></div>';
   }
   // Fetch categories/description for a done book that lacks a genre, then classify.
   function enrichBook(b){
@@ -593,29 +602,80 @@
       b.genre=classifyBook(b); return b;
     }).catch(function(){ b.genre=classifyBook(b); return b; });
   }
-  function buildRadar(counts){
-    var n=SKILLS.length, cx=150, cy=150, R=112;
+  function buildRadar(pct){
+    var n=SKILLS.length, cx=160, cy=152, R=94;
     function pt(i,rad){ var a=(-90 + i*(360/n))*Math.PI/180; return [cx+Math.cos(a)*rad, cy+Math.sin(a)*rad]; }
-    var svg='<svg viewBox="0 0 300 300" width="100%" style="max-width:340px;display:block;margin:0 auto">';
-    // rings
+    var svg='<svg viewBox="0 0 320 300" width="100%" style="max-width:360px;display:block;margin:0 auto">';
     [0.25,0.5,0.75,1].forEach(function(f){
       var pts=[]; for(var i=0;i<n;i++){ var p=pt(i,R*f); pts.push(p[0].toFixed(1)+','+p[1].toFixed(1)); }
       svg+='<polygon points="'+pts.join(' ')+'" fill="none" stroke="#e6dccf" stroke-width="1"/>';
     });
-    // axes
     for(var i=0;i<n;i++){ var e=pt(i,R); svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+e[0].toFixed(1)+'" y2="'+e[1].toFixed(1)+'" stroke="#eee3d5" stroke-width="1"/>'; }
-    // data polygon
-    var dp=[]; for(var i=0;i<n;i++){ var pct=masteryPct(counts[SKILLS[i].key]||0); var p=pt(i,R*pct/100); dp.push(p[0].toFixed(1)+','+p[1].toFixed(1)); }
+    var dp=[]; for(var i=0;i<n;i++){ var p=pt(i,R*((pct[SKILLS[i].key]||0)/100)); dp.push(p[0].toFixed(1)+','+p[1].toFixed(1)); }
     svg+='<polygon points="'+dp.join(' ')+'" fill="rgba(176,110,63,.28)" stroke="#b5713f" stroke-width="2" stroke-linejoin="round"/>';
-    // dots + labels
     for(var i=0;i<n;i++){
-      var pct=masteryPct(counts[SKILLS[i].key]||0); var p=pt(i,R*pct/100); var lp=pt(i,R+16);
+      var p=pt(i,R*((pct[SKILLS[i].key]||0)/100));
       svg+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="#b5713f"/>';
-      var anchor=(lp[0]>cx+8)?'start':(lp[0]<cx-8?'end':'middle');
-      svg+='<text x="'+lp[0].toFixed(1)+'" y="'+(lp[1]+3).toFixed(1)+'" font-size="10.5" fill="#7a6a55" text-anchor="'+anchor+'">'+SKILLS[i].icon+'</text>';
+      var lp=pt(i,R+14), x=lp[0], y=lp[1];
+      var anchor=(x>cx+6)?'start':(x<cx-6?'end':'middle');
+      svg+='<text x="'+x.toFixed(1)+'" y="'+(y+3).toFixed(1)+'" font-size="10" font-weight="700" fill="#7a6a55" text-anchor="'+anchor+'">'+esc(SKILLS[i].short)+'</text>';
     }
     svg+='</svg>';
     return svg;
+  }
+  /* ---------- AI (Gemini) content-based classification ---------- */
+  var GEMINI_MODELS=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash','gemini-2.5-flash-preview'];
+  function geminiKey(){ try{ return (localStorage.getItem('gemini_api_key')||'').trim(); }catch(e){ return ''; } }
+  function geminiModel(){ try{ return localStorage.getItem('gemini_model')||''; }catch(e){ return ''; } }
+  function setGeminiModel(m){ try{ localStorage.setItem('gemini_model', m); }catch(e){} }
+  function geminiCall(key, model, payload){
+    var url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(key);
+    return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(function(r){ if(!r.ok){ return r.json().catch(function(){return{};}).then(function(e){ var err=new Error((e&&e.error&&(e.error.status||e.error.message))||('http'+r.status)); err.http=r.status; throw err; }); } return r.json(); });
+  }
+  function aiClassify(b){
+    var key=geminiKey(); if(!key) return Promise.resolve(null);
+    var skillList=BIZ_FLAT.map(function(s){return s.key;}).join(',');
+    var genreList=SKILLS.map(function(s){return s.key;}).join(',');
+    var prompt='次の本を内容から分類してください。\n'
+      +'タイトル: '+(b.title||'')+'\n著者: '+(b.author||b.authors||'')+'\n出版社: '+(b.publisher||'')+'\n内容紹介: '+((b.desc||'').slice(0,600))+'\n\n'
+      +'skill: 次のキーから最適な1つ（ビジネススキル。該当しなければ空文字）: '+skillList+'\n'
+      +'genre: 次のキーから最適な1つ: '+genreList+'\n'
+      +'level: 本の難易度を 入門 / 標準 / 専門 から1つ。\n'
+      +'JSONのみ返す。';
+    var payload={ contents:[{parts:[{text:prompt}]}], generationConfig:{ responseMimeType:'application/json', temperature:0 } };
+    var models = geminiModel() ? [geminiModel()].concat(GEMINI_MODELS) : GEMINI_MODELS.slice();
+    var i=0;
+    function tryNext(){
+      if(i>=models.length) return Promise.resolve(null);
+      var m=models[i++];
+      return geminiCall(key,m,payload).then(function(j){
+        setGeminiModel(m);
+        try{ return JSON.parse(j.candidates[0].content.parts[0].text); }catch(e){ return null; }
+      }, function(err){ if(err.http===404 || err.http===400) return tryNext(); return null; });
+    }
+    return tryNext();
+  }
+  function applyAI(b){
+    if(b.aiDone) return Promise.resolve();
+    var pre=(b.desc || !b.isbn) ? Promise.resolve() : fetchGoogleByIsbn(b.isbn).then(function(g){ if(g){ if(g.desc)b.desc=g.desc; if(g.catz&&!b.catz)b.catz=g.catz; } }).catch(function(){});
+    return pre.then(function(){ return aiClassify(b); }).then(function(o){
+      if(o){
+        if(o.skill && BIZ_FLAT.some(function(s){return s.key===o.skill;})) b.aiSkill=o.skill;
+        if(o.genre && SKILLS.some(function(s){return s.key===o.genre;})) b.aiGenre=o.genre;
+        if(['入門','標準','専門'].indexOf(o.level)>=0) b.aiLevel=o.level;
+        b.aiDone=true;
+      }
+    }).catch(function(){});
+  }
+  function runLimited(items, n, fn){
+    return new Promise(function(resolve){
+      var i=0, active=0, done=0, total=items.length;
+      if(!total) return resolve();
+      function pump(){ while(active<n && i<total){ (function(it){ active++; Promise.resolve(fn(it)).then(fin,fin); })(items[i++]); } }
+      function fin(){ active--; done++; if(done>=total) resolve(); else pump(); }
+      pump();
+    });
   }
   function renderSkillBody(done){
     var body=document.getElementById('skillBody'); if(!body) return;
@@ -624,28 +684,28 @@
       body.innerHTML='<div class="sk-empty">まだ「読んだ本」がありません。<br>本を読み終えて「読んだ本」に登録すると、分野ごとにスキルが育っていきます。</div>';
       return;
     }
-    // top skill
-    var topKey=SKILLS[0].key, topN=-1, filled=0;
-    SKILLS.forEach(function(s){ var c=r.counts[s.key]; if(c>0)filled++; if(c>topN){topN=c;topKey=s.key;} });
+    // top skill by gauge %
+    var topKey=SKILLS[0].key, topP=-1, filled=0;
+    SKILLS.forEach(function(s){ var p=r.pct[s.key]||0; if(p>0)filled++; if(p>topP){topP=p;topKey=s.key;} });
     var top=skillOf(topKey);
     var h='';
     h+='<div class="sk-summary"><div><span class="sk-big">'+r.total+'</span><span class="sk-cap">冊 読了</span></div>';
-    h+='<div><span class="sk-big">'+top.icon+'</span><span class="sk-cap">一番の強み<br>'+esc(top.label)+'</span></div>';
+    h+='<div><span class="sk-big" style="font-size:17px">'+esc(top.short)+'</span><span class="sk-cap">一番の強み</span></div>';
     h+='<div><span class="sk-big">'+filled+'<span style="font-size:14px">/'+SKILLS.length+'</span></span><span class="sk-cap">分野を開拓</span></div></div>';
-    h+='<div class="sk-radar">'+buildRadar(r.counts)+'</div>';
+    h+='<div class="sk-radar">'+buildRadar(r.pct)+'</div>';
     h+='<div class="sk-bars">';
-    // sort by count desc for bars
-    var order=SKILLS.slice().sort(function(a,b){return (r.counts[b.key]||0)-(r.counts[a.key]||0);});
+    // sort by gauge % desc
+    var order=SKILLS.slice().sort(function(a,b){return (r.pct[b.key]||0)-(r.pct[a.key]||0);});
     order.forEach(function(s){
-      var c=r.counts[s.key]||0, lv=skillLevel(c), pct=masteryPct(c);
+      var c=r.counts[s.key]||0, p=r.pct[s.key]||0, lv=levelFromPct(p);
       h+='<div class="skbar">';
-      h+='<div class="skbar-head"><span class="skbar-name">'+s.icon+' '+esc(s.label)+'</span><span class="skbar-lv">Lv.'+lv.lv+' '+lv.name+'<span class="skbar-cnt">'+c+'冊</span></span></div>';
-      h+='<div class="skbar-track"><div class="skbar-fill" style="width:'+pct+'%;background:'+s.color+'"></div></div>';
+      h+='<div class="skbar-head"><span class="skbar-name">'+esc(s.label)+'</span><span class="skbar-lv">Lv.'+lv.lv+' '+lv.name+'<span class="skbar-cnt">'+c+'冊</span></span></div>';
+      h+='<div class="skbar-track"><div class="skbar-fill" style="width:'+p+'%;background:'+s.color+'"></div></div>';
       h+='</div>';
     });
     h+='</div>';
     h+=buildCoverageHTML(computeBizCoverage(done));
-    h+='<div class="sk-note">分野は本のタイトル・内容から自動で判定しています。読んだ本が増えるほど精度とゲージが伸びます。</div>';
+    h+='<div class="sk-note">'+(geminiKey()?'🤖 AIが本の内容（あらすじ）を読んで分類しています。':'分野は本のタイトル・内容から自動判定。🤖 AIキーを設定すると内容を読んでより正確に分類します（本を追加→🤖AIで自動分類）。')+'読んだ本が増えるほどゲージが伸びます。</div>';
     body.innerHTML=h;
   }
   function openSkillSheet(){
@@ -653,8 +713,14 @@
     openSheet('<div class="grip"></div><h2>📊 あなたの読書スキル</h2><div id="skillBody"><div class="searching"><span class="spinner"></span> 読んだ本を分析中…</div></div><button class="btn ghost" id="closeSkill" style="margin-top:12px">閉じる</button>');
     var cb=document.getElementById('closeSkill'); if(cb) cb.onclick=closeSheet;
     var need=done.filter(function(b){return !b.genre;});
-    Promise.all(need.map(enrichBook)).then(function(){ try{save();}catch(e){} renderSkillBody(done); })
-      .catch(function(){ renderSkillBody(done); });
+    Promise.all(need.map(enrichBook)).then(function(){
+      if(!geminiKey()) return;
+      var needAI=done.filter(function(b){return !b.aiDone;});
+      if(!needAI.length) return;
+      var body=document.getElementById('skillBody'); if(body) body.innerHTML='<div class="searching"><span class="spinner"></span> 🤖 AIが内容を読んで分類中…（'+needAI.length+'冊）</div>';
+      return runLimited(needAI, 4, applyAI);
+    }).then(function(){ try{save();}catch(e){} renderSkillBody(done); })
+      .catch(function(){ try{renderSkillBody(done);}catch(e){} });
   }
 
   var state = { books: load(), tab:"want", q:"" };
@@ -669,6 +735,50 @@
   }
   function uid(){ return "b"+Date.now().toString(36)+Math.floor(Math.random()*1e5).toString(36); }
   function nowIso(){ return new Date().toISOString(); }
+
+  /* ---------- Import / Export (migration & backup) ---------- */
+  function exportBooks(){
+    try{
+      var data=JSON.stringify({v:1, exportedAt:nowIso(), books:state.books}, null, 2);
+      var blob=new Blob([data], {type:'application/json'});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a'); a.href=url; a.download='dokusho-backup.json'; document.body.appendChild(a); a.click();
+      setTimeout(function(){ try{document.body.removeChild(a); URL.revokeObjectURL(url);}catch(e){} },120);
+    }catch(e){ toast('書き出しに失敗しました'); }
+  }
+  function normImportStatus(s){ return (['want','stack','reading','done'].indexOf(s)>=0)?s:'want'; }
+  function normalizeImported(b){
+    var addedAt = b.addedAt ? (typeof b.addedAt==='number'? new Date(b.addedAt).toISOString() : b.addedAt) : nowIso();
+    return {
+      id: b.id || uid(),
+      isbn: b.isbn || '',
+      title: b.title || '',
+      author: b.author || b.authors || '',
+      publisher: b.publisher || '',
+      pubdate: b.pubdate || b.publishedDate || '',
+      cover: b.cover || '',
+      status: normImportStatus(b.status),
+      addedAt: addedAt, updatedAt: nowIso(),
+      source: b.source || 'import',
+      memo: b.memo || '', rating: b.rating || 0
+    };
+  }
+  function importBooks(data){
+    var arr = Array.isArray(data) ? data : (data && Array.isArray(data.books) ? data.books : []);
+    var added=0, skipped=0, haveIsbn={}, haveTitle={};
+    function tkey(x){ return (x.title||'').trim()+'|'+((x.author||x.authors||'')).trim(); }
+    state.books.forEach(function(x){ if(x.isbn) haveIsbn[x.isbn]=1; haveTitle[tkey(x)]=1; });
+    arr.forEach(function(raw){
+      if(!raw || (!raw.title && !raw.isbn)) return;
+      var nb=normalizeImported(raw);
+      var dupe=(nb.isbn && haveIsbn[nb.isbn]) || haveTitle[tkey(nb)];
+      if(dupe){ skipped++; return; }
+      if(nb.isbn) haveIsbn[nb.isbn]=1; haveTitle[tkey(nb)]=1;
+      state.books.push(nb); added++;
+    });
+    if(added) save();
+    return {added:added, skipped:skipped};
+  }
 
   /* ---------- ISBN helpers ---------- */
   function normIsbn(s){ return (s||"").replace(/[^0-9Xx]/g,"").toUpperCase(); }
@@ -878,6 +988,7 @@
     var m=[]; if(b.author)m.push(esc(b.author)); if(b.publisher)m.push(esc(b.publisher));
     h+='<div class="m">'+m.join("<br>")+'</div>';
     h+='<span class="status-now">'+st.icon+' '+st.label+'</span></div></div>';
+    h+=bizPreview(b);
     h+='<h2>棚を移動</h2><div class="shelf-choices">';
     STATUSES.forEach(function(s){
       h+='<button class="shelf-btn'+(s.key===b.status?" cur":"")+'" data-move="'+s.key+'"><span class="dot" style="background:'+s.color+'"></span>'+s.label+'</button>';
@@ -976,10 +1087,30 @@
     h+='<div id="results"></div>';
     h+='<button class="btn ghost" id="cancelBtn">閉じる</button>';
     h+='<div style="text-align:center;margin-top:6px"><a href="#" id="keyLink" style="font-size:12px;color:#9a8c7a;text-decoration:underline">検索がうまくいかない時（APIキー設定）</a></div>';
+    h+='<div style="text-align:center;margin-top:4px"><a href="#" id="aiLink" style="font-size:12px;color:#9a8c7a;text-decoration:underline">🤖 AIで内容から自動分類（Gemini APIキー）</a></div>';
+    h+='<div style="text-align:center;margin-top:8px;font-size:12px;color:#9a8c7a">データ：<a href="#" id="importLink" style="color:#9a8c7a;text-decoration:underline">取り込み（インポート）</a> ／ <a href="#" id="exportLink" style="color:#9a8c7a;text-decoration:underline">書き出し（バックアップ）</a></div>';
+    h+='<input id="importFile" type="file" accept=".json,application/json" style="display:none">';
     openSheet(h);
     var inp=document.getElementById("qInput");
     document.getElementById("camBtn").onclick=function(){ closeSheet(); startScan(); };
     document.getElementById("cancelBtn").onclick=closeSheet;
+    document.getElementById("aiLink").onclick=function(e){ e.preventDefault();
+      var cur=geminiKey();
+      var v=window.prompt("Gemini APIキーを貼り付け（空欄でOKすると解除）\nGoogle AI Studio（無料）で取得できます。設定後、スキル画面を開くとAIが内容を読んで分類します。", cur);
+      if(v===null) return; v=(v||'').trim();
+      try{ if(v){ localStorage.setItem('gemini_api_key',v); toast('AIキーを保存しました'); } else { localStorage.removeItem('gemini_api_key'); toast('AIキーを解除しました'); } }catch(err){ toast('保存に失敗しました'); }
+    };
+    document.getElementById("exportLink").onclick=function(e){ e.preventDefault(); exportBooks(); };
+    document.getElementById("importLink").onclick=function(e){ e.preventDefault(); document.getElementById("importFile").click(); };
+    document.getElementById("importFile").onchange=function(e){
+      var f=e.target.files&&e.target.files[0]; e.target.value="";
+      if(!f) return;
+      var rd=new FileReader();
+      rd.onload=function(){ try{ var data=JSON.parse(rd.result); var n=importBooks(data); toast(n.added+"冊を取り込みました"+(n.skipped?"（重複"+n.skipped+"冊はスキップ）":"")); render(); closeSheet(); }
+        catch(err){ toast("読み込めませんでした（JSON形式をご確認ください）"); } };
+      rd.onerror=function(){ toast("ファイルを読み込めませんでした"); };
+      rd.readAsText(f);
+    };
     document.getElementById("keyLink").onclick=function(e){ e.preventDefault();
       var cur=gbKey();
       var v=window.prompt("Google Books APIキーを貼り付けてください。\n（空欄でOKを押すと解除します）\n\n取得方法は付属の手順を参照。", cur);
@@ -1237,7 +1368,7 @@
   document.getElementById("scanClose").addEventListener("click",function(){ stopScan(); });
   document.getElementById("scanManual").addEventListener("click",function(){ stopScan(); openAddSheet(true); });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey };
 
   render();
 })();
