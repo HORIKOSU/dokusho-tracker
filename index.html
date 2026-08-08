@@ -1023,7 +1023,7 @@
     h+='<div class="m">'+(m.join("<br>")||("ISBN "+esc(meta.isbn||"-")))+'</div>';
     if(existing){ h+='<span class="status-now">登録済み: '+statusOf(existing.status).icon+' '+statusOf(existing.status).label+'</span>'; }
     h+='</div></div>';
-    h+=bizPreview(meta);
+    h+='<div id="skPrev">'+bizPreview(meta)+'</div>';
     h+='<h2>'+(existing?"棚を移動しますか？":"どの棚に入れますか？")+'</h2>';
     h+='<div class="shelf-choices">';
     STATUSES.forEach(function(s){
@@ -1037,6 +1037,10 @@
     h+='<button class="btn ghost" id="skipBtn">'+(opts.fromScan?"スキップして次をスキャン":(opts.back?"← 検索結果に戻る":"閉じる"))+'</button>';
     openSheet(h);
     var cov=document.querySelector("#sheet .prev .cov"); if(cov){ cov.parentNode.replaceChild(coverNode(meta),cov); }
+    if(geminiKey() && !meta.aiDone){
+      var sp=document.getElementById("skPrev"); if(sp){ sp.innerHTML='<div class="sk-prev out"><span class="spinner"></span> 🤖 AIが内容から判定中…</div>'; }
+      applyAI(meta).then(function(){ var el=document.getElementById("skPrev"); if(el) el.innerHTML=bizPreview(meta); });
+    }
 
     Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-add]"),function(btn){
       btn.onclick=function(){
@@ -1050,6 +1054,10 @@
           if(meta.catz && !existing.catz) existing.catz=meta.catz;
           if(meta.desc && !existing.desc) existing.desc=meta.desc;
           if(meta.pages && !existing.pages) existing.pages=meta.pages;
+          if(meta.aiSkill && !existing.aiSkill) existing.aiSkill=meta.aiSkill;
+          if(meta.aiGenre && !existing.aiGenre) existing.aiGenre=meta.aiGenre;
+          if(meta.aiLevel && !existing.aiLevel) existing.aiLevel=meta.aiLevel;
+          if(meta.aiDone) existing.aiDone=true;
           save(); toast("「"+statusOf(to).label+"」に移動しました");
         }else{
           var bk={
@@ -1060,7 +1068,11 @@
           if(meta.catz) bk.catz=meta.catz;
           if(meta.desc) bk.desc=meta.desc;
           if(meta.pages) bk.pages=meta.pages;
-          if(meta.catz) bk.genre=classifyBook(bk);
+          if(meta.aiSkill) bk.aiSkill=meta.aiSkill;
+          if(meta.aiGenre) bk.aiGenre=meta.aiGenre;
+          if(meta.aiLevel) bk.aiLevel=meta.aiLevel;
+          if(meta.aiDone) bk.aiDone=true;
+          if(meta.catz||meta.aiGenre) bk.genre=classifyBook(bk);
           state.books.push(bk);
           save(); toast("「"+statusOf(to).label+"」に追加しました");
         }
