@@ -530,11 +530,13 @@
     if(pg>=380) w+=0.3; else if(pg>0 && pg<=140){ w=Math.max(0.8,w-0.3); }
     return {w:w, name:name};
   }
-  var SKILL_TARGET=3.5;
+  var SKILL_TARGET=8;
   function skillEffective(books){
     var ws=(books||[]).map(function(b){return bookLevel(b).w;}).sort(function(a,b){return b-a;});
-    var eff=0, decay=1;
-    for(var i=0;i<ws.length;i++){ eff+=ws[i]*decay; decay*=0.5; } // diminishing returns → cannibalization
+    var eff=0;
+    // harmonic diminishing (1, 1/2, 1/3 …): 1冊では上がりすぎず、良書・冊数を重ねるほど伸び、
+    // 似た本の重複（カニばり）は寄与が小さくなる
+    for(var i=0;i<ws.length;i++){ eff+=ws[i]/(i+1); }
     return eff;
   }
   function skillPctFromBooks(books){ return Math.min(100, Math.round(skillEffective(books)/SKILL_TARGET*100)); }
