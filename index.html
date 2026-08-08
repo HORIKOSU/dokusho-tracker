@@ -47,6 +47,22 @@
   .skbar-track{height:9px;border-radius:999px;background:var(--accent-soft);overflow:hidden}
   .skbar-fill{height:100%;border-radius:999px;transition:width .5s cubic-bezier(.22,.61,.36,1)}
   .sk-note{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6;text-align:center}
+  .cov-wrap{margin-top:20px;border-top:1px solid var(--accent-soft);padding-top:16px}
+  .cov-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:8px}
+  .cov-title{font-size:14px;font-weight:800;color:var(--ink)}
+  .cov-rate{font-size:12px;color:var(--accent-dk);font-weight:800;white-space:nowrap}
+  .cov-bar{height:8px;border-radius:999px;background:var(--accent-soft);overflow:hidden;margin-bottom:16px}
+  .cov-bar>div{height:100%;background:var(--accent);border-radius:999px;transition:width .5s ease}
+  .cov-dom{margin-bottom:13px}
+  .cov-dom-h{font-size:11.5px;font-weight:800;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
+  .cov-cells{display:flex;flex-wrap:wrap;gap:6px}
+  .cov-cell{font-size:11px;padding:5px 9px;border-radius:8px;border:1px solid #e6dccf;color:#9a8c7a;background:#fbf7f1;line-height:1.2;display:inline-flex;align-items:center}
+  .cov-cell b{font-weight:800;margin-left:5px}
+  .cov-cell.l0{border-style:dashed;opacity:.7}
+  .cov-cell.l1{background:#f0e2cf;color:#7a5b33;border-color:#e6cfa8}
+  .cov-cell.l2{background:#e3b877;color:#5a3d16;border-color:#d9a85f}
+  .cov-cell.l3{background:#b5713f;color:#fff;border-color:#a5632f}
+  .cov-legend{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;justify-content:center}
 
   .tabs{display:flex;gap:6px;padding:2px 0}
   .tab{
@@ -341,6 +357,127 @@
     return {lv:0,name:'未開拓'};
   }
   function masteryPct(n){ return Math.max(0, Math.min(100, Math.round(n/12*100))); }
+
+  /* ---------- Comprehensive business-skill coverage map ---------- */
+  var BIZ_DOMAINS=[
+    {key:'strategy', label:'戦略・経営', skills:[
+      {key:'st_strategy', label:'経営戦略', kw:['経営戦略','competitive strategy','戦略論','事業戦略']},
+      {key:'st_bizdev',   label:'事業開発', kw:['事業開発','business development','事業構想']},
+      {key:'st_theory',   label:'経営理論', kw:['経営学','ドラッカー','management theory','経営者','マネジメント論']},
+      {key:'st_decision', label:'意思決定', kw:['意思決定','decision making','経営判断']},
+      {key:'st_innov',    label:'イノベーション', kw:['イノベーション','innovation','破壊的']}
+    ]},
+    {key:'marketing', label:'マーケティング', skills:[
+      {key:'mk_strategy', label:'マーケ戦略', kw:['マーケティング','marketing']},
+      {key:'mk_brand',    label:'ブランディング', kw:['ブランド','branding','ブランディング']},
+      {key:'mk_digital',  label:'デジタルマーケ', kw:['デジタルマーケ','web marketing','sns','seo','広告運用','グロースハック']},
+      {key:'mk_cx',       label:'顧客理解・CX', kw:['顧客体験','customer experience',' cx ','カスタマーサクセス','ユーザー理解']},
+      {key:'mk_research', label:'市場調査', kw:['市場調査','market research','マーケティングリサーチ']}
+    ]},
+    {key:'sales', label:'営業・交渉', skills:[
+      {key:'sl_sales',  label:'営業', kw:['営業','sales','セールス']},
+      {key:'sl_nego',   label:'交渉', kw:['交渉','negotiat']},
+      {key:'sl_crm',    label:'顧客関係', kw:['顧客関係','crm','関係構築']}
+    ]},
+    {key:'finance', label:'ファイナンス・会計', skills:[
+      {key:'fi_acc',    label:'会計', kw:['会計','accounting','簿記','財務諸表']},
+      {key:'fi_fin',    label:'財務・ファイナンス', kw:['財務','finance','ファイナンス','corporate finance']},
+      {key:'fi_invest', label:'投資', kw:['投資','investment','株式','資産運用']},
+      {key:'fi_mgmt',   label:'管理会計', kw:['管理会計','原価','予算管理']}
+    ]},
+    {key:'people', label:'組織・人材', skills:[
+      {key:'pe_lead',   label:'リーダーシップ', kw:['リーダーシップ','leadership','リーダー']},
+      {key:'pe_mgmt',   label:'マネジメント', kw:['マネジメント','management','管理職','部下']},
+      {key:'pe_dev',    label:'人材育成', kw:['人材育成','育成','コーチング','coaching','1on1']},
+      {key:'pe_org',    label:'組織開発', kw:['組織開発','organization','企業文化','チームビルディング','カルチャー']},
+      {key:'pe_hr',     label:'人事・HR', kw:['人事','human resource',' hr ','採用','評価制度']}
+    ]},
+    {key:'ops', label:'オペレーション・PM', skills:[
+      {key:'op_kaizen', label:'業務改善', kw:['業務改善','カイゼン','改善','効率化','リーン','lean']},
+      {key:'op_pm',     label:'プロジェクト管理', kw:['プロジェクトマネジメント','project management','アジャイル','agile','scrum','pmbok']},
+      {key:'op_scm',    label:'サプライチェーン', kw:['サプライチェーン','supply chain','物流','調達']},
+      {key:'op_quality',label:'品質・生産管理', kw:['品質管理','生産管理','quality management']}
+    ]},
+    {key:'tech', label:'IT・DX・データ', skills:[
+      {key:'te_it',     label:'IT基礎', kw:['情報システム','itインフラ','it基礎','ネットワーク']},
+      {key:'te_data',   label:'データ分析', kw:['データ分析','データサイエンス','統計','analytics','データ活用']},
+      {key:'te_dx',     label:'DX', kw:[' dx ','dx','デジタルトランスフォーメーション','デジタル化']},
+      {key:'te_prog',   label:'プログラミング', kw:['プログラミング','programming','エンジニアリング','python','ソフトウェア開発']},
+      {key:'te_ai',     label:'AI・機械学習', kw:['人工知能','機械学習','machine learning','ディープラーニング','生成ai']}
+    ]},
+    {key:'thinking', label:'思考・問題解決', skills:[
+      {key:'th_logic',  label:'ロジカルシンキング', kw:['ロジカルシンキング','論理思考','logical thinking','論理的']},
+      {key:'th_prob',   label:'問題解決', kw:['問題解決','problem solving','課題解決']},
+      {key:'th_crit',   label:'批判的思考', kw:['クリティカルシンキング','critical thinking','思考法']},
+      {key:'th_idea',   label:'発想・企画', kw:['発想','アイデア発想','企画力','creativity','ブレスト']}
+    ]},
+    {key:'comm', label:'コミュニケーション', skills:[
+      {key:'cm_present',label:'プレゼン', kw:['プレゼン','presentation','話し方','伝え方']},
+      {key:'cm_doc',    label:'資料作成', kw:['資料作成','パワーポイント','powerpoint','スライド作成']},
+      {key:'cm_write',  label:'ライティング', kw:['ライティング','writing','文章術','ビジネス文書']},
+      {key:'cm_facil',  label:'ファシリテーション', kw:['ファシリテーション','facilitation','会議術']}
+    ]},
+    {key:'self', label:'セルフマネジメント', skills:[
+      {key:'se_prod',   label:'生産性・時間術', kw:['生産性','時間管理','タスク管理','productivity','gtd','段取り']},
+      {key:'se_habit',  label:'習慣・自己管理', kw:['習慣','habit','ルーティン','自己管理']},
+      {key:'se_career', label:'キャリア', kw:['キャリア','career','転職','働き方']},
+      {key:'se_mental', label:'メンタル・健康', kw:['メンタル','health','健康','ストレス','睡眠','マインドフルネス']}
+    ]},
+    {key:'entre', label:'起業・新規事業', skills:[
+      {key:'en_startup',label:'起業・スタートアップ', kw:['起業','startup','スタートアップ','entrepreneur']},
+      {key:'en_fund',   label:'資金調達', kw:['資金調達','fundraising','ベンチャーキャピタル',' vc ']},
+      {key:'en_model',  label:'ビジネスモデル', kw:['ビジネスモデル','business model','収益モデル']}
+    ]},
+    {key:'legal', label:'法務・リスク', skills:[
+      {key:'lg_law',    label:'法務・契約', kw:['法務','契約','legal','会社法','コンプライアンス']},
+      {key:'lg_risk',   label:'リスク管理', kw:['リスク管理','risk management','危機管理']},
+      {key:'lg_ip',     label:'知的財産', kw:['知的財産','特許','知財','商標']}
+    ]}
+  ];
+  // flatten in a priority order (specific functional domains first, generic ones last)
+  var BIZ_ORDER=['finance','tech','marketing','entre','legal','sales','ops','strategy','people','comm','thinking','self'];
+  var BIZ_FLAT=(function(){
+    var m={}; BIZ_DOMAINS.forEach(function(d){ m[d.key]=d; });
+    var out=[]; BIZ_ORDER.forEach(function(dk){ var d=m[dk]; if(d) d.skills.forEach(function(s){ out.push(s); }); });
+    return out;
+  })();
+  function mapToBizSkill(b){
+    var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.publisher||'')+' '+(b.desc||'')).toLowerCase();
+    for(var i=0;i<BIZ_FLAT.length;i++){
+      var kw=BIZ_FLAT[i].kw;
+      for(var j=0;j<kw.length;j++){ if(hay.indexOf(kw[j].toLowerCase())>=0) return BIZ_FLAT[i].key; }
+    }
+    return '';
+  }
+  function computeBizCoverage(books){
+    var counts={}, total=0, covered=0;
+    BIZ_FLAT.forEach(function(s){ counts[s.key]=0; });
+    (books||[]).forEach(function(b){
+      if(b.status!=='done') return;
+      var k=b.bizskill || mapToBizSkill(b);
+      if(k && counts[k]!=null) counts[k]++;
+    });
+    BIZ_FLAT.forEach(function(s){ total++; if(counts[s.key]>0) covered++; });
+    return {counts:counts, total:total, covered:covered};
+  }
+  function covLevel(n){ return n>=3?3:(n===2?2:(n===1?1:0)); }
+  function buildCoverageHTML(cov){
+    var rate=cov.total?Math.round(cov.covered/cov.total*100):0;
+    var h='<div class="cov-wrap"><div class="cov-head"><span class="cov-title">🗺 ビジネススキル カバレッジ</span><span class="cov-rate">'+cov.covered+' / '+cov.total+'（'+rate+'%）</span></div>';
+    h+='<div class="cov-bar"><div style="width:'+rate+'%"></div></div>';
+    BIZ_DOMAINS.forEach(function(d){
+      var dc=0; d.skills.forEach(function(s){ if(cov.counts[s.key]>0) dc++; });
+      h+='<div class="cov-dom"><div class="cov-dom-h"><span>'+esc(d.label)+'</span><span>'+dc+'/'+d.skills.length+'</span></div><div class="cov-cells">';
+      d.skills.forEach(function(s){
+        var c=cov.counts[s.key]||0, lv=covLevel(c);
+        h+='<span class="cov-cell l'+lv+'">'+esc(s.label)+(c>0?'<b>'+c+'</b>':'')+'</span>';
+      });
+      h+='</div></div>';
+    });
+    h+='<div class="cov-legend"><span class="cov-cell l0">未読</span><span class="cov-cell l1">1冊</span><span class="cov-cell l2">2冊</span><span class="cov-cell l3">3冊+</span></div>';
+    h+='</div>';
+    return h;
+  }
   // Fetch categories/description for a done book that lacks a genre, then classify.
   function enrichBook(b){
     if(b.genre) return Promise.resolve(b);
@@ -401,6 +538,7 @@
       h+='</div>';
     });
     h+='</div>';
+    h+=buildCoverageHTML(computeBizCoverage(done));
     h+='<div class="sk-note">分野は本のタイトル・内容から自動で判定しています。読んだ本が増えるほど精度とゲージが伸びます。</div>';
     body.innerHTML=h;
   }
@@ -1000,7 +1138,7 @@
   document.getElementById("scanClose").addEventListener("click",function(){ stopScan(); });
   document.getElementById("scanManual").addEventListener("click",function(){ stopScan(); openAddSheet(true); });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT };
 
   render();
 })();
