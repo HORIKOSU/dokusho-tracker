@@ -627,7 +627,7 @@
   }
   /* ---------- AI (Gemini) content-based classification ---------- */
   var GEMINI_MODELS=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash','gemini-2.5-flash-preview'];
-  var AI_VER=2; // bump to force re-classification with an improved prompt
+  var AI_VER=3; // bump to force re-classification with an improved prompt
   function geminiKey(){ try{ return (localStorage.getItem('gemini_api_key')||'').trim(); }catch(e){ return ''; } }
   function geminiModel(){ try{ return localStorage.getItem('gemini_model')||''; }catch(e){ return ''; } }
   function setGeminiModel(m){ try{ localStorage.setItem('gemini_model', m); }catch(e){} }
@@ -660,13 +660,29 @@
     }
     return tryNext();
   }
+  function resolveSkillKey(v){ if(!v) return ''; v=String(v).trim();
+    for(var i=0;i<BIZ_FLAT.length;i++){ if(BIZ_FLAT[i].key===v) return v; }
+    for(var i=0;i<BIZ_FLAT.length;i++){ var L=BIZ_FLAT[i].label; if(L===v || (v.length>1 && (v.indexOf(L)>=0 || L.indexOf(v)>=0))) return BIZ_FLAT[i].key; }
+    return '';
+  }
+  function resolveGenreKey(v){ if(!v) return ''; v=String(v).trim();
+    for(var i=0;i<SKILLS.length;i++){ if(SKILLS[i].key===v) return v; }
+    for(var i=0;i<SKILLS.length;i++){ var L=SKILLS[i].label; if(L===v || (v.length>1 && (v.indexOf(L)>=0 || L.indexOf(v)>=0))) return SKILLS[i].key; }
+    return '';
+  }
+  function ensureDesc(b){
+    if(b.desc) return Promise.resolve();
+    if(b.isbn) return fetchGoogleByIsbn(b.isbn).then(function(g){ if(g){ if(g.desc)b.desc=g.desc; if(g.catz&&!b.catz)b.catz=g.catz; } }).catch(function(){});
+    if(b.title) return gbFetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(b.title)+'&maxResults=1&country=JP')
+      .then(function(j){ if(j&&j.items&&j.items[0]){ var v=j.items[0].volumeInfo||{}; if(v.description)b.desc=String(v.description).slice(0,700); if(v.categories&&!b.catz)b.catz=v.categories.join(' '); } }).catch(function(){});
+    return Promise.resolve();
+  }
   function applyAI(b){
     if(b.aiDone && b.aiVer===AI_VER) return Promise.resolve();
-    var pre=(b.desc || !b.isbn) ? Promise.resolve() : fetchGoogleByIsbn(b.isbn).then(function(g){ if(g){ if(g.desc)b.desc=g.desc; if(g.catz&&!b.catz)b.catz=g.catz; } }).catch(function(){});
-    return pre.then(function(){ return aiClassify(b); }).then(function(o){
+    return ensureDesc(b).then(function(){ return aiClassify(b); }).then(function(o){
       if(o){
-        b.aiSkill = (o.skill && BIZ_FLAT.some(function(s){return s.key===o.skill;})) ? o.skill : '';
-        if(o.genre && SKILLS.some(function(s){return s.key===o.genre;})) b.aiGenre=o.genre;
+        b.aiSkill = resolveSkillKey(o.skill);
+        var gn=resolveGenreKey(o.genre); if(gn) b.aiGenre=gn;
         if(['入門','標準','専門'].indexOf(o.level)>=0) b.aiLevel=o.level;
         b.aiDone=true; b.aiVer=AI_VER;
       }
