@@ -625,6 +625,7 @@
   }
   /* ---------- AI (Gemini) content-based classification ---------- */
   var GEMINI_MODELS=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash','gemini-2.5-flash-preview'];
+  var AI_VER=2; // bump to force re-classification with an improved prompt
   function geminiKey(){ try{ return (localStorage.getItem('gemini_api_key')||'').trim(); }catch(e){ return ''; } }
   function geminiModel(){ try{ return localStorage.getItem('gemini_model')||''; }catch(e){ return ''; } }
   function setGeminiModel(m){ try{ localStorage.setItem('gemini_model', m); }catch(e){} }
@@ -635,14 +636,15 @@
   }
   function aiClassify(b){
     var key=geminiKey(); if(!key) return Promise.resolve(null);
-    var skillList=BIZ_FLAT.map(function(s){return s.key;}).join(',');
-    var genreList=SKILLS.map(function(s){return s.key;}).join(',');
-    var prompt='次の本を内容から分類してください。\n'
-      +'タイトル: '+(b.title||'')+'\n著者: '+(b.author||b.authors||'')+'\n出版社: '+(b.publisher||'')+'\n内容紹介: '+((b.desc||'').slice(0,600))+'\n\n'
-      +'skill: 次のキーから最適な1つ（ビジネススキル。該当しなければ空文字）: '+skillList+'\n'
-      +'genre: 次のキーから最適な1つ: '+genreList+'\n'
-      +'level: 本の難易度を 入門 / 標準 / 専門 から1つ。\n'
-      +'JSONのみ返す。';
+    var skillLines=[]; BIZ_DOMAINS.forEach(function(dd){ dd.skills.forEach(function(s){ skillLines.push(s.key+' = '+dd.label+'／'+s.label); }); });
+    var genreLines=SKILLS.map(function(s){ return s.key+' = '+s.label; });
+    var prompt='あなたは書籍分類の専門家です。次の本について、内容（あらすじ）から総合的に判断してください。\n\n'
+      +'【本の情報】\nタイトル: '+(b.title||'')+'\n著者: '+(b.author||b.authors||'')+'\n出版社: '+(b.publisher||'')+'\n内容紹介: '+((b.desc||'').slice(0,700))+'\n\n'
+      +'【出力ルール】キー文字列は下記一覧の左側の値をそのまま使うこと。\n\n'
+      +'skill: この本で最も学べるビジネススキルを次の一覧から1つ選びキーのみ返す（当てはまらなければ空文字）:\n'+skillLines.join('\n')+'\n\n'
+      +'genre: 大まかなジャンルを次から1つ選びキーのみ返す:\n'+genreLines.join('\n')+'\n\n'
+      +'level: 本の難易度を「入門」「標準」「専門」のいずれか1つ。\n\n'
+      +'必ず {"skill":"","genre":"","level":""} 形式のJSONのみを返す。';
     var payload={ contents:[{parts:[{text:prompt}]}], generationConfig:{ responseMimeType:'application/json', temperature:0 } };
     var models = geminiModel() ? [geminiModel()].concat(GEMINI_MODELS) : GEMINI_MODELS.slice();
     var i=0;
@@ -657,14 +659,14 @@
     return tryNext();
   }
   function applyAI(b){
-    if(b.aiDone) return Promise.resolve();
+    if(b.aiDone && b.aiVer===AI_VER) return Promise.resolve();
     var pre=(b.desc || !b.isbn) ? Promise.resolve() : fetchGoogleByIsbn(b.isbn).then(function(g){ if(g){ if(g.desc)b.desc=g.desc; if(g.catz&&!b.catz)b.catz=g.catz; } }).catch(function(){});
     return pre.then(function(){ return aiClassify(b); }).then(function(o){
       if(o){
-        if(o.skill && BIZ_FLAT.some(function(s){return s.key===o.skill;})) b.aiSkill=o.skill;
+        b.aiSkill = (o.skill && BIZ_FLAT.some(function(s){return s.key===o.skill;})) ? o.skill : '';
         if(o.genre && SKILLS.some(function(s){return s.key===o.genre;})) b.aiGenre=o.genre;
         if(['入門','標準','専門'].indexOf(o.level)>=0) b.aiLevel=o.level;
-        b.aiDone=true;
+        b.aiDone=true; b.aiVer=AI_VER;
       }
     }).catch(function(){});
   }
@@ -715,7 +717,7 @@
     var need=done.filter(function(b){return !b.genre;});
     Promise.all(need.map(enrichBook)).then(function(){
       if(!geminiKey()) return;
-      var needAI=done.filter(function(b){return !b.aiDone;});
+      var needAI=done.filter(function(b){return !b.aiDone || b.aiVer!==AI_VER;});
       if(!needAI.length) return;
       var body=document.getElementById('skillBody'); if(body) body.innerHTML='<div class="searching"><span class="spinner"></span> 🤖 AIが内容を読んで分類中…（'+needAI.length+'冊）</div>';
       return runLimited(needAI, 4, applyAI);
@@ -988,7 +990,7 @@
     var m=[]; if(b.author)m.push(esc(b.author)); if(b.publisher)m.push(esc(b.publisher));
     h+='<div class="m">'+m.join("<br>")+'</div>';
     h+='<span class="status-now">'+st.icon+' '+st.label+'</span></div></div>';
-    h+=bizPreview(b);
+    h+='<div id="skPrev">'+bizPreview(b)+'</div>';
     h+='<h2>棚を移動</h2><div class="shelf-choices">';
     STATUSES.forEach(function(s){
       h+='<button class="shelf-btn'+(s.key===b.status?" cur":"")+'" data-move="'+s.key+'"><span class="dot" style="background:'+s.color+'"></span>'+s.label+'</button>';
@@ -998,6 +1000,10 @@
     h+='<button class="btn ghost" id="closeBtn">閉じる</button>';
     openSheet(h);
     var cov=document.querySelector("#sheet .prev .cov"); if(cov){ cov.parentNode.replaceChild(coverNode(b),cov); }
+    if(geminiKey() && (!b.aiDone || b.aiVer!==AI_VER)){
+      var sp=document.getElementById("skPrev"); if(sp){ sp.innerHTML='<div class="sk-prev out"><span class="spinner"></span> 🤖 AIが内容から判定中…</div>'; }
+      applyAI(b).then(function(){ try{save();}catch(e){} var el=document.getElementById("skPrev"); if(el) el.innerHTML=bizPreview(b); render(); });
+    }
     Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-move]"),function(btn){
       btn.onclick=function(){
         var to=btn.dataset.move;
