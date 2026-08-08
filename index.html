@@ -32,6 +32,21 @@
   .brand .logo{font-size:22px}
   .brand h1{font-size:19px;margin:0;font-weight:800;letter-spacing:.02em}
   .brand .total{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600}
+  .skillbtn{margin-left:8px;border:none;background:var(--accent-soft);color:var(--accent-dk);font-family:inherit;font-weight:800;font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap}
+  .skillbtn:active{transform:scale(.95)}
+  .sk-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:26px 6px;line-height:1.7}
+  .sk-summary{display:flex;justify-content:space-around;text-align:center;gap:8px;margin:2px 0 14px}
+  .sk-summary .sk-big{display:block;font-size:24px;font-weight:800;color:var(--ink);line-height:1.1}
+  .sk-summary .sk-cap{display:block;font-size:11px;color:var(--muted);margin-top:3px;line-height:1.3}
+  .sk-radar{margin:6px 0 14px}
+  .sk-bars{display:flex;flex-direction:column;gap:11px}
+  .skbar-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;gap:8px}
+  .skbar-name{font-size:13px;font-weight:700;color:var(--ink)}
+  .skbar-lv{font-size:11.5px;color:var(--muted);font-weight:700;white-space:nowrap}
+  .skbar-cnt{margin-left:7px;color:var(--accent-dk);font-weight:800}
+  .skbar-track{height:9px;border-radius:999px;background:var(--accent-soft);overflow:hidden}
+  .skbar-fill{height:100%;border-radius:999px;transition:width .5s cubic-bezier(.22,.61,.36,1)}
+  .sk-note{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6;text-align:center}
 
   .tabs{display:flex;gap:6px;padding:2px 0}
   .tab{
@@ -212,6 +227,7 @@
     <span class="logo">📚</span>
     <h1>読書管理</h1>
     <span class="total" id="totalCount"></span>
+    <button class="skillbtn" id="skillBtn">📊 スキル</button>
   </div>
   <div class="tabs" id="tabs" role="tablist">
     <button class="tab" role="tab" data-status="want"    aria-selected="true"><span class="lbl">読みたい本</span><span class="cnt" id="cnt-want">0</span></button>
@@ -273,6 +289,129 @@
   ];
   function getVar(n){try{return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}catch(e){return "#999";}}
   function statusOf(k){for(var i=0;i<STATUSES.length;i++){if(STATUSES[i].key===k)return STATUSES[i];}return STATUSES[0];}
+
+  /* ---------- Skill dashboard (from 読んだ本) ---------- */
+  var SKILLS=[
+    {key:'business', label:'ビジネス・経営', icon:'💼', color:'#b5713f'},
+    {key:'it',       label:'IT・技術',      icon:'💻', color:'#5b8fb0'},
+    {key:'marketing',label:'マーケ・営業',  icon:'📣', color:'#c98a3a'},
+    {key:'design',   label:'デザイン',      icon:'🎨', color:'#c56b8a'},
+    {key:'money',    label:'お金・投資',    icon:'💰', color:'#4c9a76'},
+    {key:'self',     label:'自己啓発',      icon:'🌱', color:'#8a9a4c'},
+    {key:'liberal',  label:'教養・科学',    icon:'📚', color:'#7a6cc0'},
+    {key:'novel',    label:'文学・小説',    icon:'📖', color:'#b06a4f'}
+  ];
+  function skillOf(k){ for(var i=0;i<SKILLS.length;i++){ if(SKILLS[i].key===k) return SKILLS[i]; } return SKILLS[6]; }
+  // keyword rules, checked in order; first hit wins; fallback = liberal
+  var SKILL_RULES=[
+    {key:'it',        kw:['computer','programming','software','engineer','technolog','information technology','テクノロジー','デジタル','プログラ','エンジニア','ソフトウェア','python','javascript','機械学習','人工知能','ディープラーニング','クラウド','アルゴリズム','データサイエンス','データ分析','情報技術','ネットワーク']},
+    {key:'money',     kw:['investing','investment','finance','financial','stock market','投資','株式','資産運用','金融','会計','税金','ファイナンス','マネー','年金','資産形成','億り','家計']},
+    {key:'marketing', kw:['marketing','advertising','branding','マーケティング','営業','広告','ブランディング','販促','セールス','集客','コピーライティング','sns運用','pr']},
+    {key:'design',    kw:['design','graphic','photograph','illustrat','typography','デザイン','クリエイティブ','写真','イラスト','建築','フォント','タイポグラフィ','ui/ux','アート']},
+    {key:'novel',     kw:['fiction','novel','literature','poetry','小説','文学','物語','エッセイ','随筆','ミステリー','詩集','ノンフィクション']},
+    {key:'self',      kw:['self-help','self help','psychology','habit','motivation','mindfulness','自己啓発','習慣','心理','マインドセット','幸福','生き方','思考法','メンタル','モチベーション','人間関係','コミュニケーション']},
+    {key:'business',  kw:['business','management','economics','leadership','entrepreneur','経営','ビジネス','起業','リーダーシップ','マネジメント','戦略','組織','働き方','キャリア','経済','仕事術','会社']},
+    {key:'liberal',   kw:['science','history','philosophy','mathematics','physics','歴史','哲学','科学','教養','数学','物理','化学','生物','政治','宗教','地理','医学','雑学','サイエンス','社会学']}
+  ];
+  function classifyBook(b){
+    var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.publisher||'')+' '+(b.desc||'')).toLowerCase();
+    for(var i=0;i<SKILL_RULES.length;i++){
+      var kw=SKILL_RULES[i].kw;
+      for(var j=0;j<kw.length;j++){ if(hay.indexOf(kw[j])>=0) return SKILL_RULES[i].key; }
+    }
+    return 'liberal';
+  }
+  function computeSkills(books){
+    var counts={}; SKILLS.forEach(function(s){counts[s.key]=0;});
+    var total=0;
+    (books||[]).forEach(function(b){
+      if(b.status!=='done') return;
+      var g=b.genre||classifyBook(b);
+      if(counts[g]==null) g='liberal';
+      counts[g]++; total++;
+    });
+    return {counts:counts, total:total};
+  }
+  function skillLevel(n){
+    if(n>=20) return {lv:5,name:'達人'};
+    if(n>=10) return {lv:4,name:'上級'};
+    if(n>=6)  return {lv:3,name:'中級'};
+    if(n>=3)  return {lv:2,name:'初級'};
+    if(n>=1)  return {lv:1,name:'入門'};
+    return {lv:0,name:'未開拓'};
+  }
+  function masteryPct(n){ return Math.max(0, Math.min(100, Math.round(n/12*100))); }
+  // Fetch categories/description for a done book that lacks a genre, then classify.
+  function enrichBook(b){
+    if(b.genre) return Promise.resolve(b);
+    if(b.catz || !b.isbn){ b.genre=classifyBook(b); return Promise.resolve(b); }
+    return fetchGoogleByIsbn(b.isbn).then(function(g){
+      if(g){ if(g.catz) b.catz=g.catz; if(g.desc) b.desc=g.desc; }
+      b.genre=classifyBook(b); return b;
+    }).catch(function(){ b.genre=classifyBook(b); return b; });
+  }
+  function buildRadar(counts){
+    var n=SKILLS.length, cx=150, cy=150, R=112;
+    function pt(i,rad){ var a=(-90 + i*(360/n))*Math.PI/180; return [cx+Math.cos(a)*rad, cy+Math.sin(a)*rad]; }
+    var svg='<svg viewBox="0 0 300 300" width="100%" style="max-width:340px;display:block;margin:0 auto">';
+    // rings
+    [0.25,0.5,0.75,1].forEach(function(f){
+      var pts=[]; for(var i=0;i<n;i++){ var p=pt(i,R*f); pts.push(p[0].toFixed(1)+','+p[1].toFixed(1)); }
+      svg+='<polygon points="'+pts.join(' ')+'" fill="none" stroke="#e6dccf" stroke-width="1"/>';
+    });
+    // axes
+    for(var i=0;i<n;i++){ var e=pt(i,R); svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+e[0].toFixed(1)+'" y2="'+e[1].toFixed(1)+'" stroke="#eee3d5" stroke-width="1"/>'; }
+    // data polygon
+    var dp=[]; for(var i=0;i<n;i++){ var pct=masteryPct(counts[SKILLS[i].key]||0); var p=pt(i,R*pct/100); dp.push(p[0].toFixed(1)+','+p[1].toFixed(1)); }
+    svg+='<polygon points="'+dp.join(' ')+'" fill="rgba(176,110,63,.28)" stroke="#b5713f" stroke-width="2" stroke-linejoin="round"/>';
+    // dots + labels
+    for(var i=0;i<n;i++){
+      var pct=masteryPct(counts[SKILLS[i].key]||0); var p=pt(i,R*pct/100); var lp=pt(i,R+16);
+      svg+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="#b5713f"/>';
+      var anchor=(lp[0]>cx+8)?'start':(lp[0]<cx-8?'end':'middle');
+      svg+='<text x="'+lp[0].toFixed(1)+'" y="'+(lp[1]+3).toFixed(1)+'" font-size="10.5" fill="#7a6a55" text-anchor="'+anchor+'">'+SKILLS[i].icon+'</text>';
+    }
+    svg+='</svg>';
+    return svg;
+  }
+  function renderSkillBody(done){
+    var body=document.getElementById('skillBody'); if(!body) return;
+    var r=computeSkills(done);
+    if(r.total===0){
+      body.innerHTML='<div class="sk-empty">まだ「読んだ本」がありません。<br>本を読み終えて「読んだ本」に登録すると、分野ごとにスキルが育っていきます。</div>';
+      return;
+    }
+    // top skill
+    var topKey=SKILLS[0].key, topN=-1, filled=0;
+    SKILLS.forEach(function(s){ var c=r.counts[s.key]; if(c>0)filled++; if(c>topN){topN=c;topKey=s.key;} });
+    var top=skillOf(topKey);
+    var h='';
+    h+='<div class="sk-summary"><div><span class="sk-big">'+r.total+'</span><span class="sk-cap">冊 読了</span></div>';
+    h+='<div><span class="sk-big">'+top.icon+'</span><span class="sk-cap">一番の強み<br>'+esc(top.label)+'</span></div>';
+    h+='<div><span class="sk-big">'+filled+'<span style="font-size:14px">/'+SKILLS.length+'</span></span><span class="sk-cap">分野を開拓</span></div></div>';
+    h+='<div class="sk-radar">'+buildRadar(r.counts)+'</div>';
+    h+='<div class="sk-bars">';
+    // sort by count desc for bars
+    var order=SKILLS.slice().sort(function(a,b){return (r.counts[b.key]||0)-(r.counts[a.key]||0);});
+    order.forEach(function(s){
+      var c=r.counts[s.key]||0, lv=skillLevel(c), pct=masteryPct(c);
+      h+='<div class="skbar">';
+      h+='<div class="skbar-head"><span class="skbar-name">'+s.icon+' '+esc(s.label)+'</span><span class="skbar-lv">Lv.'+lv.lv+' '+lv.name+'<span class="skbar-cnt">'+c+'冊</span></span></div>';
+      h+='<div class="skbar-track"><div class="skbar-fill" style="width:'+pct+'%;background:'+s.color+'"></div></div>';
+      h+='</div>';
+    });
+    h+='</div>';
+    h+='<div class="sk-note">分野は本のタイトル・内容から自動で判定しています。読んだ本が増えるほど精度とゲージが伸びます。</div>';
+    body.innerHTML=h;
+  }
+  function openSkillSheet(){
+    var done=state.books.filter(function(b){return b.status==='done';});
+    openSheet('<div class="grip"></div><h2>📊 あなたの読書スキル</h2><div id="skillBody"><div class="searching"><span class="spinner"></span> 読んだ本を分析中…</div></div><button class="btn ghost" id="closeSkill" style="margin-top:12px">閉じる</button>');
+    var cb=document.getElementById('closeSkill'); if(cb) cb.onclick=closeSheet;
+    var need=done.filter(function(b){return !b.genre;});
+    Promise.all(need.map(enrichBook)).then(function(){ try{save();}catch(e){} renderSkillBody(done); })
+      .catch(function(){ renderSkillBody(done); });
+  }
 
   var state = { books: load(), tab:"want", q:"" };
 
@@ -346,7 +485,9 @@
       title: v.title ? (v.title + (v.subtitle?(" "+v.subtitle):"")) : "",
       author: (v.authors && v.authors.length) ? v.authors.join(", ") : "",
       publisher: v.publisher || "", pubdate: v.publishedDate || "",
-      cover: img, isbn: isbn13, source:"Google"
+      cover: img, isbn: isbn13, source:"Google",
+      catz: (v.categories && v.categories.length) ? v.categories.join(" ") : "",
+      desc: (v.description || "").slice(0, 400)
     };
   }
   // Google Books access: try fetch first, fall back to JSONP (works on file:// and when CORS/fetch is blocked)
@@ -540,13 +681,19 @@
           existing.status=to; existing.updatedAt=nowIso();
           if(!existing.title && meta.title) existing.title=meta.title;
           if(!existing.cover && meta.cover) existing.cover=meta.cover;
+          if(meta.catz && !existing.catz) existing.catz=meta.catz;
+          if(meta.desc && !existing.desc) existing.desc=meta.desc;
           save(); toast("「"+statusOf(to).label+"」に移動しました");
         }else{
-          state.books.push({
+          var bk={
             id:uid(), isbn:meta.isbn||"", title:meta.title||"", author:meta.author||"",
             publisher:meta.publisher||"", pubdate:meta.pubdate||"", cover:meta.cover||"",
             status:to, addedAt:nowIso(), updatedAt:nowIso(), source:meta.source||""
-          });
+          };
+          if(meta.catz) bk.catz=meta.catz;
+          if(meta.desc) bk.desc=meta.desc;
+          if(meta.catz) bk.genre=classifyBook(bk);
+          state.books.push(bk);
           save(); toast("「"+statusOf(to).label+"」に追加しました");
         }
         state.tab=to; render();
@@ -849,10 +996,11 @@
   }
   document.getElementById("search").addEventListener("input",function(e){ state.q=e.target.value; render(); });
   document.getElementById("fab").addEventListener("click",function(){ openAddSheet(false); });
+  document.getElementById("skillBtn").addEventListener("click",function(){ openSkillSheet(); });
   document.getElementById("scanClose").addEventListener("click",function(){ stopScan(); });
   document.getElementById("scanManual").addEventListener("click",function(){ stopScan(); openAddSheet(true); });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS };
 
   render();
 })();
