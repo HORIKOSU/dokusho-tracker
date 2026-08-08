@@ -16,6 +16,7 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;overflow-x:hidden;width:100%;max-width:100%}
+  body.sheet-open{overflow:hidden}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
     background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased;
@@ -56,12 +57,14 @@
   .cov-dom{margin-bottom:13px}
   .cov-dom-h{font-size:11.5px;font-weight:800;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
   .cov-cells{display:flex;flex-wrap:wrap;gap:6px}
-  .cov-cell{font-size:11px;padding:5px 9px;border-radius:8px;border:1px solid #e6dccf;color:#9a8c7a;background:#fbf7f1;line-height:1.2;display:inline-flex;align-items:center}
-  .cov-cell b{font-weight:800;margin-left:5px}
-  .cov-cell.l0{border-style:dashed;opacity:.7}
-  .cov-cell.l1{background:#f0e2cf;color:#7a5b33;border-color:#e6cfa8}
-  .cov-cell.l2{background:#e3b877;color:#5a3d16;border-color:#d9a85f}
-  .cov-cell.l3{background:#b5713f;color:#fff;border-color:#a5632f}
+  .cov-cell{position:relative;overflow:hidden;font-size:11px;padding:6px 9px;border-radius:8px;border:1px solid #e6dccf;color:#7a5b33;background:#fbf7f1;line-height:1.2;display:inline-flex;align-items:center;min-height:15px}
+  .cov-cell .cc-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:#f0dcb8;z-index:0;transition:width .5s cubic-bezier(.22,.61,.36,1)}
+  .cov-cell .cc-tx{position:relative;z-index:1}
+  .cov-cell .cc-tx b{font-weight:800;margin-left:4px}
+  .cov-cell.l0{border-style:dashed;color:#9a8c7a;opacity:.8}
+  .cov-cell.l1 .cc-fill{background:#f0dcb8}
+  .cov-cell.l2 .cc-fill{background:#e3b877}
+  .cov-cell.l3 .cc-fill{background:#d29e57}
   .cov-legend{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;justify-content:center}
   .cov-cap{font-size:10.5px;color:var(--muted);margin:-8px 0 14px;text-align:right}
   .sk-prev{background:var(--accent-soft);border-radius:12px;padding:10px 12px;margin:10px 0 4px}
@@ -149,7 +152,8 @@
   .overlay.on{display:flex}
   .sheet{
     width:100%;max-width:560px;background:var(--panel);border-radius:20px 20px 0 0;
-    padding:8px 18px calc(20px + env(safe-area-inset-bottom));animation:up .22s ease;max-height:92vh;overflow:auto;
+    padding:8px 18px calc(20px + env(safe-area-inset-bottom));animation:up .22s ease;max-height:92vh;
+    overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;
   }
   @keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:translateY(0);opacity:1}}
   .grip{width:40px;height:5px;border-radius:3px;background:var(--line);margin:8px auto 14px}
@@ -338,6 +342,8 @@
   ];
   function classifyBook(b){
     var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.publisher||'')+' '+(b.desc||'')).toLowerCase();
+    // AI books always go to IT・技術 (before money/finance etc.)
+    if(/(^|[^a-z0-9])ai([^a-z0-9]|$)/.test(hay) || hay.indexOf('生成ai')>=0 || hay.indexOf('chatgpt')>=0 || hay.indexOf('人工知能')>=0 || hay.indexOf('機械学習')>=0 || hay.indexOf('ディープラーニング')>=0 || hay.indexOf('プロンプト')>=0 || hay.indexOf('llm')>=0) return 'it';
     for(var i=0;i<SKILL_RULES.length;i++){
       var kw=SKILL_RULES[i].kw;
       for(var j=0;j<kw.length;j++){ if(hay.indexOf(kw[j])>=0) return SKILL_RULES[i].key; }
@@ -349,7 +355,7 @@
     var total=0;
     (books||[]).forEach(function(b){
       if(b.status!=='done') return;
-      var g=b.genre||classifyBook(b);
+      var g=classifyBook(b);
       if(counts[g]==null) g='liberal';
       counts[g]++; total++;
     });
@@ -459,7 +465,7 @@
       {key:'so_sales',  label:'営業・セールス',kw:['営業','sales','セールス','商談']},
       {key:'so_crm',    label:'顧客関係(CRM)',kw:['顧客関係','crm','カスタマーリレーション']},
       {key:'so_kaizen', label:'業務改善',kw:['業務改善','カイゼン','改善','効率化','リーン','lean','bpr']},
-      {key:'so_pm',     label:'プロジェクト管理',kw:['プロジェクトマネジメント','project management','アジャイル','agile','scrum','pmbok']},
+      {key:'so_pm',     label:'プロジェクト管理',kw:['プロジェクトマネジメント','プロジェクト管理','project management','アジャイル','agile','scrum','pmbok']},
       {key:'so_scm',    label:'サプライチェーン',kw:['サプライチェーン','supply chain','物流','調達','在庫管理']},
       {key:'so_quality',label:'品質・生産管理',kw:['品質管理','生産管理','quality management','オペレーション管理']}
     ]},
@@ -498,6 +504,10 @@
   })();
   function mapToBizSkill(b){
     var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.publisher||'')+' '+(b.desc||'')).toLowerCase();
+    // AI books route to the AI・テクノベート skills first (before finance etc.)
+    if(hay.indexOf('生成ai')>=0||hay.indexOf('chatgpt')>=0||hay.indexOf('プロンプト')>=0||hay.indexOf('llm')>=0||hay.indexOf('大規模言語モデル')>=0) return 'te_genai';
+    if(hay.indexOf('機械学習')>=0||hay.indexOf('ディープラーニング')>=0||hay.indexOf('深層学習')>=0||hay.indexOf('machine learning')>=0) return 'te_ml';
+    if(/(^|[^a-z0-9])ai([^a-z0-9]|$)/.test(hay)||hay.indexOf('人工知能')>=0||hay.indexOf('ai活用')>=0||hay.indexOf('ai時代')>=0||hay.indexOf('aiリテラシー')>=0) return 'te_aibiz';
     for(var i=0;i<BIZ_FLAT.length;i++){
       var kw=BIZ_FLAT[i].kw;
       for(var j=0;j<kw.length;j++){ if(hay.indexOf(kw[j].toLowerCase())>=0) return BIZ_FLAT[i].key; }
@@ -549,11 +559,16 @@
       h+='<div class="cov-dom"><div class="cov-dom-h"><span>'+esc(d.label)+'</span><span>'+dc+'/'+d.skills.length+'</span></div><div class="cov-cells">';
       d.skills.forEach(function(s){
         var p=cov.pct[s.key]||0, lv=covLevel(p);
-        h+='<span class="cov-cell l'+lv+'">'+esc(s.label)+(p>0?'<b>'+p+'%</b>':'')+'</span>';
+        h+='<span class="cov-cell l'+lv+'" title="'+esc(s.label)+' '+p+'%"><span class="cc-fill" style="width:'+p+'%"></span><span class="cc-tx">'+esc(s.label)+(p>0?' <b>'+p+'%</b>':'')+'</span></span>';
       });
       h+='</div></div>';
     });
-    h+='<div class="cov-legend"><span class="cov-cell l0">未開拓</span><span class="cov-cell l1">育成中</span><span class="cov-cell l2">中級</span><span class="cov-cell l3">高</span></div>';
+    h+='<div class="cov-legend">'
+      +'<span class="cov-cell l0"><span class="cc-tx">未開拓</span></span>'
+      +'<span class="cov-cell l1"><span class="cc-fill" style="width:30%"></span><span class="cc-tx">育成中</span></span>'
+      +'<span class="cov-cell l2"><span class="cc-fill" style="width:60%"></span><span class="cc-tx">中級</span></span>'
+      +'<span class="cov-cell l3"><span class="cc-fill" style="width:100%"></span><span class="cc-tx">高</span></span>'
+      +'</div>';
     h+='</div>';
     return h;
   }
@@ -746,6 +761,15 @@
         if(!j || !j.items || !j.items[0]) return null;
         var m=volToMeta(j.items[0].volumeInfo||{}); m.isbn=m.isbn||isbn13; return m;
       }).catch(function(){ return null; });
+  }
+  // ISBN -> candidate list (openBD + Google), for "候補を出す" flow
+  function getIsbnCandidates(isbn13){
+    var out=[], seen={};
+    function add(m){ if(!m || !m.title) return; var k=(m.isbn||"")+"|"+m.title; if(seen[k]) return; seen[k]=1; if(!m.isbn) m.isbn=isbn13; out.push(m); }
+    return fetchOpenBD(isbn13).then(function(o){ add(o); }, function(){})
+      .then(function(){ return gbFetch("https://www.googleapis.com/books/v1/volumes?q=isbn:"+encodeURIComponent(isbn13)+"&country=JP"); })
+      .then(function(j){ if(j && j.items){ j.items.forEach(function(it){ add(volToMeta(it.volumeInfo||{})); }); } }, function(){})
+      .then(function(){ return out; });
   }
 
   /* ---------- Book metadata: keyword / title search (candidates) ---------- */
@@ -942,11 +966,9 @@
   }
 
   /* ---------- Add sheet: camera + title/ISBN search ---------- */
-  function openAddSheet(focusSearch){
+  function openAddSheet(focusSearch, prefillIsbn){
     var h='<div class="grip"></div><h2>本を追加</h2>';
-    h+='<button class="btn primary" id="photoBtn">📷 写真を撮ってISBNを読み取る</button>';
-    h+='<input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none">';
-    h+='<button class="btn ghost" id="camBtn" style="margin-top:8px">🎥 リアルタイムカメラで読み取る</button>';
+    h+='<button class="btn primary" id="camBtn">📷 カメラでISBNを読み取る</button>';
     h+='<div class="or"><span>または</span></div>';
     h+='<div class="field"><label>タイトル・著者・ISBNで検索</label>'+
        '<div class="search-row"><input id="qInput" placeholder="例：リーダブルコード ／ 9784..." autocomplete="off" enterkeyhint="search">'+
@@ -957,25 +979,6 @@
     openSheet(h);
     var inp=document.getElementById("qInput");
     document.getElementById("camBtn").onclick=function(){ closeSheet(); startScan(); };
-    document.getElementById("photoBtn").onclick=function(){ document.getElementById("photoInput").click(); };
-    document.getElementById("photoInput").onchange=function(e){ var f=e.target.files&&e.target.files[0]; if(f) handlePhoto(f); e.target.value=""; };
-    function handlePhoto(file){
-      var box=document.getElementById("results");
-      box.innerHTML='<div class="searching"><span class="spinner"></span> 画像を解析中…</div>';
-      var url=URL.createObjectURL(file);
-      var img=new Image();
-      img.onload=function(){
-        var code=decodeFromImage(img); try{URL.revokeObjectURL(url);}catch(e){}
-        if(!code){ box.innerHTML='<div class="searching">写真からバーコードを読み取れませんでした。<br>明るい場所で、バーコードが画面いっぱいに・まっすぐ写るように撮り直すか、下の検索欄にISBNの数字を入力してください。</div>'; return; }
-        var isbn=normIsbn(code);
-        if(!isBookIsbn(isbn)){ box.innerHTML='<div class="searching">読み取れましたが本のISBNではないようです（'+esc(code)+'）。<br>978から始まる上側のバーコードを大きく写してください。</div>'; return; }
-        box.innerHTML='<div class="searching"><span class="spinner"></span> 情報を取得中…</div>';
-        lookupBook(isbn).then(function(meta){ presentFound(meta,{back:reopen}); })
-          .catch(function(){ presentFound({isbn:(isbn.length===10?isbn10to13(isbn):isbn)},{back:reopen}); });
-      };
-      img.onerror=function(){ try{URL.revokeObjectURL(url);}catch(e){} box.innerHTML='<div class="searching">画像を読み込めませんでした。もう一度お試しください。</div>'; };
-      img.src=url;
-    }
     document.getElementById("cancelBtn").onclick=closeSheet;
     document.getElementById("keyLink").onclick=function(e){ e.preventDefault();
       var cur=gbKey();
@@ -988,6 +991,7 @@
     document.getElementById("searchBtn").onclick=runSearch;
     inp.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); runSearch(); } });
     if(focusSearch){ setTimeout(function(){ try{inp.focus();}catch(e){} },180); }
+    if(prefillIsbn){ inp.value=prefillIsbn; runSearch(); }
 
     function reopen(){ openAddSheet(false); var q2=document.getElementById("qInput"); if(q2){ q2.value=inp.value; } }
 
@@ -998,10 +1002,15 @@
       var btn=document.getElementById("searchBtn");
       function busy(on){ btn.innerHTML= on?'<span class="spinner"></span>':"検索"; btn.disabled=on; }
       busy(true);
-      // Numeric & valid ISBN -> pinpoint single book
+      // Numeric & valid ISBN -> show candidate(s) on the spot
       if(looksNumeric(raw) && isBookIsbn(digits)){
-        lookupBook(digits).then(function(meta){ busy(false); presentFound(meta,{back:reopen}); })
-          .catch(function(){ busy(false); presentFound({isbn:(digits.length===10?isbn10to13(digits):digits)},{back:reopen}); });
+        var isbn13=digits.length===10?isbn10to13(digits):digits;
+        box.innerHTML='<div class="searching"><span class="spinner"></span> 候補を検索中…</div>';
+        getIsbnCandidates(isbn13).then(function(list){
+          busy(false);
+          if(list && list.length){ renderResults(box,list,isbn13); }
+          else { presentFound({isbn:isbn13},{back:reopen}); }
+        }).catch(function(){ busy(false); presentFound({isbn:isbn13},{back:reopen}); });
         return;
       }
       // Keyword / title search -> candidate list
@@ -1146,14 +1155,9 @@
     lastCode=code; lastTime=t;
     paused=true;
     beep();
-    setScanStatus("<span class='spinner'></span> 情報を取得中…");
-    lookupBook(code).then(function(meta){
-      setScanStatus("");
-      presentFound(meta,{fromScan:true});
-    }).catch(function(){
-      setScanStatus("");
-      presentFound({isbn:(code.length===10?isbn10to13(code):code)},{fromScan:true});
-    });
+    var code13=code.length===10?isbn10to13(code):code;
+    stopScan();
+    openAddSheet(false, code13);
   }
   function resumeScan(){
     if(!scannerEl.classList.contains("on")) return;
@@ -1193,8 +1197,8 @@
 
   /* ---------- Sheet helpers ---------- */
   var overlay=document.getElementById("overlay"), sheet=document.getElementById("sheet");
-  function openSheet(html){ sheet.innerHTML=html; overlay.classList.add("on"); }
-  function closeSheet(){ overlay.classList.remove("on"); sheet.innerHTML=""; }
+  function openSheet(html){ sheet.innerHTML=html; overlay.classList.add("on"); try{sheet.scrollTop=0;}catch(e){} document.body.classList.add("sheet-open"); }
+  function closeSheet(){ overlay.classList.remove("on"); sheet.innerHTML=""; document.body.classList.remove("sheet-open"); }
   overlay.addEventListener("click",function(e){ if(e.target===overlay) closeSheet(); });
 
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
