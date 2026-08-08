@@ -331,7 +331,7 @@
   function skillOf(k){ for(var i=0;i<SKILLS.length;i++){ if(SKILLS[i].key===k) return SKILLS[i]; } return SKILLS[6]; }
   // keyword rules, checked in order; first hit wins; fallback = liberal
   var SKILL_RULES=[
-    {key:'it',        kw:['computer','programming','software','engineer','technolog','information technology','テクノロジー','デジタル','プログラ','エンジニア','ソフトウェア','python','javascript','機械学習','人工知能','ディープラーニング','クラウド','アルゴリズム','データサイエンス','データ分析','情報技術','ネットワーク']},
+    {key:'it',        kw:['computer','programming','software','engineer','technolog','information technology','テクノロジー','プログラ','エンジニア','ソフトウェア','python','javascript','機械学習','人工知能','ディープラーニング','クラウド','アルゴリズム','データサイエンス','データ分析','情報技術']},
     {key:'money',     kw:['investing','investment','finance','financial','stock market','投資','株式','資産運用','金融','会計','税金','ファイナンス','マネー','年金','資産形成','億り','家計']},
     {key:'marketing', kw:['marketing','advertising','branding','マーケティング','営業','広告','ブランディング','販促','セールス','集客','コピーライティング','sns運用','pr']},
     {key:'design',    kw:['design','graphic','photograph','illustrat','typography','デザイン','クリエイティブ','写真','イラスト','建築','フォント','タイポグラフィ','ui/ux','アート']},
@@ -342,9 +342,9 @@
   ];
   function classifyBook(b){
     if(b.aiGenre) return b.aiGenre;
-    var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.publisher||'')+' '+(b.desc||'')).toLowerCase();
-    // AI books always go to IT・技術 (before money/finance etc.)
-    if(/(^|[^a-z0-9])ai([^a-z0-9]|$)/.test(hay) || hay.indexOf('生成ai')>=0 || hay.indexOf('chatgpt')>=0 || hay.indexOf('人工知能')>=0 || hay.indexOf('機械学習')>=0 || hay.indexOf('ディープラーニング')>=0 || hay.indexOf('プロンプト')>=0 || hay.indexOf('llm')>=0) return 'it';
+    var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.desc||'')).toLowerCase();
+    // AIそのものが主題の本のみ IT・技術へ（「AI時代」等の弱い修飾語では発動しない）
+    if(hay.indexOf('生成ai')>=0 || hay.indexOf('chatgpt')>=0 || hay.indexOf('人工知能')>=0 || hay.indexOf('機械学習')>=0 || hay.indexOf('ディープラーニング')>=0 || hay.indexOf('大規模言語モデル')>=0) return 'it';
     for(var i=0;i<SKILL_RULES.length;i++){
       var kw=SKILL_RULES[i].kw;
       for(var j=0;j<kw.length;j++){ if(hay.indexOf(kw[j])>=0) return SKILL_RULES[i].key; }
@@ -434,7 +434,7 @@
       {key:'te_genai',   label:'生成AI',kw:['生成ai','chatgpt','大規模言語モデル','llm','copilot','画像生成','生成系ai','gpt']},
       {key:'te_prompt',  label:'プロンプト活用',kw:['プロンプトエンジニアリング','プロンプト','prompt engineering']},
       {key:'te_ml',      label:'機械学習・深層学習',kw:['機械学習','machine learning','ディープラーニング','深層学習','ニューラルネットワーク','人工知能']},
-      {key:'te_aibiz',   label:'AI業務活用',kw:['ai活用','ai導入','ai時代','ai×','業務でai','ai仕事術','aiリテラシー']},
+      {key:'te_aibiz',   label:'AI業務活用',kw:['ai活用','ai導入','業務でai','ai仕事術','aiリテラシー']},
       {key:'te_aiethics',label:'AI倫理・リスク',kw:['ai倫理','ai規制','責任あるai','ai governance','ディープフェイク']},
       {key:'te_ds',      label:'データサイエンス',kw:['データサイエンス','data science','データエンジニア']},
       {key:'te_prog',    label:'プログラミング',kw:['プログラミング','programming','エンジニア','python','ソフトウェア開発','コーディング']},
@@ -506,11 +506,10 @@
   })();
   function mapToBizSkill(b){
     if(b.aiSkill) return b.aiSkill;
-    var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.publisher||'')+' '+(b.desc||'')).toLowerCase();
-    // AI books route to the AI・テクノベート skills first (before finance etc.)
-    if(hay.indexOf('生成ai')>=0||hay.indexOf('chatgpt')>=0||hay.indexOf('プロンプト')>=0||hay.indexOf('llm')>=0||hay.indexOf('大規模言語モデル')>=0) return 'te_genai';
-    if(hay.indexOf('機械学習')>=0||hay.indexOf('ディープラーニング')>=0||hay.indexOf('深層学習')>=0||hay.indexOf('machine learning')>=0) return 'te_ml';
-    if(/(^|[^a-z0-9])ai([^a-z0-9]|$)/.test(hay)||hay.indexOf('人工知能')>=0||hay.indexOf('ai活用')>=0||hay.indexOf('ai時代')>=0||hay.indexOf('aiリテラシー')>=0) return 'te_aibiz';
+    var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.desc||'')).toLowerCase();
+    // AIそのものが主題の本のみ AI・テクノベートへ（「AI時代」等の弱い修飾語では発動しない）
+    if(hay.indexOf('生成ai')>=0||hay.indexOf('chatgpt')>=0||hay.indexOf('プロンプト')>=0||hay.indexOf('大規模言語モデル')>=0) return 'te_genai';
+    if(hay.indexOf('機械学習')>=0||hay.indexOf('ディープラーニング')>=0||hay.indexOf('深層学習')>=0||hay.indexOf('machine learning')>=0||hay.indexOf('人工知能')>=0) return 'te_ml';
     for(var i=0;i<BIZ_FLAT.length;i++){
       var kw=BIZ_FLAT[i].kw;
       for(var j=0;j<kw.length;j++){ if(hay.indexOf(kw[j].toLowerCase())>=0) return BIZ_FLAT[i].key; }
@@ -627,7 +626,7 @@
   }
   /* ---------- AI (Gemini) content-based classification ---------- */
   var GEMINI_MODELS=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash','gemini-2.5-flash-preview'];
-  var AI_VER=3; // bump to force re-classification with an improved prompt
+  var AI_VER=4; // bump to force re-classification with an improved prompt
   function geminiKey(){ try{ return (localStorage.getItem('gemini_api_key')||'').trim(); }catch(e){ return ''; } }
   function geminiModel(){ try{ return localStorage.getItem('gemini_model')||''; }catch(e){ return ''; } }
   function setGeminiModel(m){ try{ localStorage.setItem('gemini_model', m); }catch(e){} }
@@ -641,7 +640,8 @@
     var skillLines=[]; BIZ_DOMAINS.forEach(function(dd){ dd.skills.forEach(function(s){ skillLines.push(s.key+' = '+dd.label+'／'+s.label); }); });
     var genreLines=SKILLS.map(function(s){ return s.key+' = '+s.label; });
     var prompt='あなたは書籍分類の専門家です。次の本について、内容（あらすじ）から総合的に判断してください。\n\n'
-      +'【本の情報】\nタイトル: '+(b.title||'')+'\n著者: '+(b.author||b.authors||'')+'\n出版社: '+(b.publisher||'')+'\n内容紹介: '+((b.desc||'').slice(0,700))+'\n\n'
+      +'【本の情報】\nタイトル: '+(b.title||'')+'\n著者: '+(b.author||b.authors||'')+'\n内容紹介: '+((b.desc||'').slice(0,700))+'\n\n'
+      +'注意: 出版社名やレーベル名（例: SBクリエイティブ等）は分類の手がかりにしないこと。\n'
       +'【出力ルール】キー文字列は下記一覧の左側の値をそのまま使うこと。\n\n'
       +'skill: この本で最も学べるビジネススキルを次の一覧から1つ選びキーのみ返す（当てはまらなければ空文字）:\n'+skillLines.join('\n')+'\n\n'
       +'genre: 大まかなジャンルを次から1つ選びキーのみ返す:\n'+genreLines.join('\n')+'\n\n'
