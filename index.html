@@ -394,7 +394,7 @@
       {key:'fi_facc',  label:'財務会計',kw:['財務会計','会計','accounting','簿記','財務諸表','決算書']},
       {key:'fi_macc',  label:'管理会計',kw:['管理会計','原価計算','予算管理']},
       {key:'fi_fin',   label:'ファイナンス',kw:['ファイナンス','corporate finance','財務戦略','資本コスト','npv']},
-      {key:'fi_invest',label:'投資・資産運用',kw:['投資','investment','株式','資産運用','ポートフォリオ']},
+      {key:'fi_invest',label:'投資・資産運用',kw:['投資','investment','株式','資産運用','ポートフォリオ','fire','経済的自由','不動産投資','保険']},
       {key:'fi_econ',  label:'経済学',kw:['経済学','economics','マクロ経済','ミクロ経済','金融政策']},
       {key:'fi_tax',   label:'税務',kw:['税務','税金','節税','tax']}
     ]},
@@ -404,7 +404,8 @@
       {key:'or_hr',   label:'人事・HR',kw:['人事','human resource',' hr ','採用','タレントマネジメント']},
       {key:'or_train',label:'人材育成',kw:['人材育成','育成','コーチング','coaching','1on1','研修']},
       {key:'or_eval', label:'評価・報酬',kw:['人事評価','評価制度','報酬制度','okr','目標管理','mbo']},
-      {key:'or_team', label:'チーム運営',kw:['チームビルディング','チーム運営','心理的安全性']}
+      {key:'or_team', label:'チーム運営',kw:['チームビルディング','チーム運営','心理的安全性']},
+      {key:'or_motiv',label:'モチベーション',kw:['モチベーション','動機づけ','やる気','エンゲージメント','モチベ']}
     ]},
     {key:'leader', label:'リーダーシップ', skills:[
       {key:'ld_lead',    label:'リーダーシップ',kw:['リーダーシップ','leadership','リーダー']},
@@ -421,14 +422,16 @@
       {key:'tk_doc',    label:'資料作成',kw:['資料作成','パワーポイント','powerpoint','スライド','図解']},
       {key:'tk_write',  label:'ライティング',kw:['ライティング','writing','文章術','ビジネス文書','文章力']},
       {key:'tk_facil',  label:'ファシリテーション',kw:['ファシリテーション','facilitation','会議術']},
-      {key:'tk_nego',   label:'交渉',kw:['交渉','negotiat']}
+      {key:'tk_nego',   label:'交渉',kw:['交渉','negotiat']},
+      {key:'tk_comm',   label:'対人コミュニケーション',kw:['対人コミュニケーション','コミュニケーション','雑談','対話','説得','傾聴','聞く力','語り','レトリック','雄弁','会話術','人を動かす','伝える技術','話す技術','根回し']}
     ]},
     {key:'analysis', label:'分析', skills:[
       {key:'an_data',  label:'データ分析',kw:['データ分析','データ活用','data analysis','bi','データドリブン']},
       {key:'an_stat',  label:'統計',kw:['統計','statistics','確率','ベイズ']},
-      {key:'an_quant', label:'定量・計量',kw:['定量分析','計量','回帰分析','分析手法']},
+      {key:'an_quant', label:'定量・計量',kw:['定量分析','計量','回帰分析','分析手法','数字力','数字に強']},
       {key:'an_frame', label:'フレームワーク',kw:['フレームワーク','framework','swot','3c','ロジックツリー','mece']},
-      {key:'an_research',label:'リサーチ',kw:['リサーチ','market research','調査設計','市場調査']}
+      {key:'an_research',label:'リサーチ',kw:['リサーチ','market research','調査設計','市場調査']},
+      {key:'an_behav',  label:'行動経済学・心理',kw:['行動経済学','認知バイアス','ナッジ','行動科学','ヒューリスティック','影響力','心理学','人間心理','不合理']}
     ]},
     {key:'tech', label:'AI・テクノベート', skills:[
       {key:'te_genai',   label:'生成AI',kw:['生成ai','chatgpt','大規模言語モデル','llm','copilot','画像生成','生成系ai','gpt']},
@@ -437,14 +440,14 @@
       {key:'te_aibiz',   label:'AI業務活用',kw:['ai活用','ai導入','業務でai','ai仕事術','aiリテラシー']},
       {key:'te_aiethics',label:'AI倫理・リスク',kw:['ai倫理','ai規制','責任あるai','ai governance','ディープフェイク']},
       {key:'te_ds',      label:'データサイエンス',kw:['データサイエンス','data science','データエンジニア']},
-      {key:'te_prog',    label:'プログラミング',kw:['プログラミング','programming','エンジニア','python','ソフトウェア開発','コーディング']},
+      {key:'te_prog',    label:'プログラミング',kw:['プログラミング','programming','エンジニア','python','ソフトウェア開発','コーディング','ノーコード']},
       {key:'te_dx',      label:'DX・デジタル戦略',kw:[' dx ','dx','デジタルトランスフォーメーション','デジタル化','デジタル戦略']},
       {key:'te_it',      label:'IT基礎',kw:['情報システム','itインフラ','ネットワーク','クラウド','it基礎']},
       {key:'te_sec',     label:'情報セキュリティ',kw:['情報セキュリティ','セキュリティ','security','サイバー']},
       {key:'te_prod',    label:'プロダクトマネジメント',kw:['プロダクトマネジメント','product management','プロダクトマネジャー','pdm']}
     ]},
     {key:'design', label:'デザイン', skills:[
-      {key:'de_think',  label:'デザイン思考',kw:['デザイン思考','design thinking']},
+      {key:'de_think',  label:'デザイン思考',kw:['デザイン思考','design thinking','美意識','アート思考']},
       {key:'de_ux',     label:'UX/UI',kw:[' ux',' ui','ユーザー体験','ユーザビリティ','ux/ui']},
       {key:'de_visual', label:'ビジュアル',kw:['グラフィックデザイン','ビジュアル','タイポグラフィ','配色','レイアウト']},
       {key:'de_creative',label:'クリエイティブ',kw:['クリエイティブ','creative','アート','写真','映像']}
@@ -452,7 +455,7 @@
     {key:'entre', label:'事業開発・スタートアップ', skills:[
       {key:'en_newbiz', label:'新規事業開発',kw:['新規事業','事業開発','business development','事業構想']},
       {key:'en_startup',label:'起業・スタートアップ',kw:['起業','startup','スタートアップ','entrepreneur']},
-      {key:'en_model',  label:'ビジネスモデル',kw:['ビジネスモデル','business model','収益モデル','マネタイズ']},
+      {key:'en_model',  label:'ビジネスモデル',kw:['ビジネスモデル','business model','収益モデル','マネタイズ','サブスク','サブスクリプション']},
       {key:'en_fund',   label:'資金調達',kw:['資金調達','fundraising','ベンチャーキャピタル',' vc ']},
       {key:'en_innov',  label:'イノベーション',kw:['イノベーション','innovation','破壊的','両利き']},
       {key:'en_growth', label:'グロース',kw:['グロース','growth','スケール','pmf']}
@@ -469,7 +472,8 @@
       {key:'so_kaizen', label:'業務改善',kw:['業務改善','カイゼン','改善','効率化','リーン','lean','bpr']},
       {key:'so_pm',     label:'プロジェクト管理',kw:['プロジェクトマネジメント','プロジェクト管理','project management','アジャイル','agile','scrum','pmbok']},
       {key:'so_scm',    label:'サプライチェーン',kw:['サプライチェーン','supply chain','物流','調達','在庫管理']},
-      {key:'so_quality',label:'品質・生産管理',kw:['品質管理','生産管理','quality management','オペレーション管理']}
+      {key:'so_quality',label:'品質・生産管理',kw:['品質管理','生産管理','quality management','オペレーション管理']},
+      {key:'so_cs',     label:'接客・顧客対応',kw:['接客','クレーム対応','ホスピタリティ','おもてなし','顧客対応','カスタマーサポート','接遇']}
     ]},
     {key:'career', label:'キャリア・志', skills:[
       {key:'ca_career', label:'キャリア設計',kw:['キャリア','career','キャリアデザイン','転職']},
@@ -482,7 +486,8 @@
       {key:'se_habit', label:'習慣・自己管理',kw:['習慣','habit','ルーティン','自己管理','継続力']},
       {key:'se_mental',label:'メンタル・健康',kw:['メンタル','health','健康','ストレス','睡眠','マインドフルネス','アンガーマネジメント']},
       {key:'se_learn', label:'学習法',kw:['勉強法','学習法','読書術','インプット','アウトプット','記憶術']},
-      {key:'se_goal',  label:'目標設定',kw:['目標設定','goal setting','習慣化','セルフマネジメント']}
+      {key:'se_goal',  label:'目標設定',kw:['目標設定','goal setting','習慣化','セルフマネジメント']},
+      {key:'se_note',  label:'情報整理・知的生産',kw:['メモ','ノート術','情報整理','知的生産','速読','要約力','要約','情報収集術']}
     ]},
     {key:'legal', label:'法務・リスク', skills:[
       {key:'lg_law',  label:'法務・契約',kw:['法務','契約','legal','会社法','ビジネス法務']},
@@ -580,7 +585,10 @@
   // Search-time preview: which skill a book covers + how much it raises the gauge
   function bizPreview(b){
     var k=mapToBizSkill(b), lvl=bookLevel(b);
-    if(!k){ return '<div class="sk-prev out">📊 この本で学べるビジネススキル：該当なし（教養・小説など）／レベル '+lvl.name+'</div>'; }
+    if(!k){
+      var g=classifyBook(b); var gl=(SKILLS.filter(function(s){return s.key===g;})[0]||{}).label||'教養';
+      return '<div class="sk-prev out">📊 ビジネススキルの該当なし　ジャンル: <b>'+esc(gl)+'</b>（レベル '+lvl.name+'）</div>';
+    }
     var sLabel='', dLabel='';
     BIZ_DOMAINS.forEach(function(d){ d.skills.forEach(function(s){ if(s.key===k){ sLabel=s.label; dLabel=d.label; } }); });
     var done=state.books.filter(function(x){ return x.status==='done' && (x.bizskill||mapToBizSkill(x))===k; });
@@ -626,7 +634,7 @@
   }
   /* ---------- AI (Gemini) content-based classification ---------- */
   var GEMINI_MODELS=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash','gemini-2.5-flash-preview'];
-  var AI_VER=4; // bump to force re-classification with an improved prompt
+  var AI_VER=6; // bump to force re-classification with an improved prompt
   function geminiKey(){ try{ return (localStorage.getItem('gemini_api_key')||'').trim(); }catch(e){ return ''; } }
   function geminiModel(){ try{ return localStorage.getItem('gemini_model')||''; }catch(e){ return ''; } }
   function setGeminiModel(m){ try{ localStorage.setItem('gemini_model', m); }catch(e){} }
