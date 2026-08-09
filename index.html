@@ -47,6 +47,7 @@
   .skbar-cnt{margin-left:7px;color:var(--accent-dk);font-weight:800}
   .skbar-track{height:9px;border-radius:999px;background:var(--accent-soft);overflow:hidden}
   .skbar-fill{height:100%;border-radius:999px;transition:width .5s cubic-bezier(.22,.61,.36,1)}
+  .skill-title{font-size:17px;margin:2px 0 12px;font-weight:800}
   .sk-note{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6;text-align:center}
   .cov-wrap{margin-top:20px;border-top:1px solid var(--accent-soft);padding-top:16px}
   .cov-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:8px}
@@ -272,6 +273,7 @@
     </div>
   </div>
   <div class="grid" id="list"></div>
+  <div id="skillPage" style="display:none"></div>
 </main>
 
 <button class="fab" id="fab">
@@ -341,7 +343,7 @@
     {key:'liberal',   kw:['science','history','philosophy','mathematics','physics','歴史','哲学','科学','教養','数学','物理','化学','生物','政治','宗教','地理','医学','雑学','サイエンス','社会学']}
   ];
   function classifyBook(b){
-    if(b.aiGenre) return b.aiGenre;
+    if(b.aiGenre && b.aiVer===AI_VER) return b.aiGenre;
     var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.desc||'')).toLowerCase();
     // AIそのものが主題の本のみ IT・技術へ（「AI時代」等の弱い修飾語では発動しない）
     if(hay.indexOf('生成ai')>=0 || hay.indexOf('chatgpt')>=0 || hay.indexOf('人工知能')>=0 || hay.indexOf('機械学習')>=0 || hay.indexOf('ディープラーニング')>=0 || hay.indexOf('大規模言語モデル')>=0) return 'it';
@@ -510,7 +512,7 @@
     return out;
   })();
   function mapToBizSkill(b){
-    if(b.aiSkill) return b.aiSkill;
+    if(b.aiSkill && b.aiVer===AI_VER) return b.aiSkill;
     var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.desc||'')).toLowerCase();
     // AIそのものが主題の本のみ AI・テクノベートへ（「AI時代」等の弱い修飾語では発動しない）
     if(hay.indexOf('生成ai')>=0||hay.indexOf('chatgpt')>=0||hay.indexOf('プロンプト')>=0||hay.indexOf('大規模言語モデル')>=0) return 'te_genai';
@@ -523,7 +525,7 @@
   }
   // Estimate a book's depth/level from title + description + page count
   function bookLevel(b){
-    if(b.aiLevel){ var wa=(b.aiLevel==='専門')?2.4:(b.aiLevel==='入門'?1.0:1.6); var pg2=b.pages||0; if(pg2>=380)wa+=0.3; else if(pg2>0&&pg2<=140)wa=Math.max(0.8,wa-0.3); return {w:wa,name:b.aiLevel}; }
+    if(b.aiLevel && b.aiVer===AI_VER){ var wa=(b.aiLevel==='専門')?2.4:(b.aiLevel==='入門'?1.0:1.6); var pg2=b.pages||0; if(pg2>=380)wa+=0.3; else if(pg2>0&&pg2<=140)wa=Math.max(0.8,wa-0.3); return {w:wa,name:b.aiLevel}; }
     var hay=((b.title||'')+' '+(b.desc||'')+' '+(b.catz||'')).toLowerCase();
     var adv=['実践','応用','理論','体系','大全','教科書','徹底','専門','上級','ハンドブック','実務','完全版','エキスパート','プロフェッショナル','図鑑'];
     var beg=['入門','はじめて','初めて','基礎','図解','マンガ','まんが','さるでも','超入門','1年生','やさしい','面白いほど','ゼロから','超基礎','これだけ','いちばんやさしい','たった'];
@@ -563,7 +565,7 @@
     var rate=cov.total?Math.round(cov.covered/cov.total*100):0;
     var h='<div class="cov-wrap"><div class="cov-head"><span class="cov-title">🗺 ビジネススキル カバレッジ</span><span class="cov-rate">開拓 '+cov.covered+'/'+cov.total+'・平均 '+cov.avg+'%</span></div>';
     h+='<div class="cov-bar"><div style="width:'+rate+'%"></div></div>';
-    h+='<div class="cov-cap">冊数でなく本のレベル×重複度でゲージ算出（16分野85スキル／グロービス体系を参考）</div>';
+    h+='<div class="cov-cap">冊数でなく本のレベル×重複度でゲージ算出（16分野'+BIZ_FLAT.length+'スキル／グロービス体系を参考）</div>';
     BIZ_DOMAINS.forEach(function(d){
       var dc=0; d.skills.forEach(function(s){ if(cov.pct[s.key]>0) dc++; });
       h+='<div class="cov-dom"><div class="cov-dom-h"><span>'+esc(d.label)+'</span><span>'+dc+'/'+d.skills.length+'</span></div><div class="cov-cells">';
@@ -736,10 +738,20 @@
     h+='<div class="sk-note">'+(geminiKey()?'🤖 AIが本の内容（あらすじ）を読んで分類しています。':'分野は本のタイトル・内容から自動判定。🤖 AIキーを設定すると内容を読んでより正確に分類します（本を追加→🤖AIで自動分類）。')+'読んだ本が増えるほどゲージが伸びます。</div>';
     body.innerHTML=h;
   }
+  function applyViewMode(){
+    var skill = state.view==='skill';
+    var tb=document.querySelector('.toolbar'); if(tb) tb.style.display = skill?'none':'';
+    var ls=document.getElementById('list'); if(ls) ls.style.display = skill?'none':'';
+    var sp=document.getElementById('skillPage'); if(sp) sp.style.display = skill?'block':'none';
+    var fab=document.getElementById('fab'); if(fab) fab.style.display = skill?'none':'';
+    var sb=document.getElementById('skillBtn'); if(sb) sb.textContent = skill?'← 本棚に戻る':'📊 スキル';
+  }
   function openSkillSheet(){
+    state.view='skill'; applyViewMode();
+    var page=document.getElementById('skillPage');
+    page.innerHTML='<h2 class="skill-title">📊 あなたの読書スキル</h2><div id="skillBody"><div class="searching"><span class="spinner"></span> 読んだ本を分析中…</div></div>';
+    try{ window.scrollTo(0,0); }catch(e){}
     var done=state.books.filter(function(b){return b.status==='done';});
-    openSheet('<div class="grip"></div><h2>📊 あなたの読書スキル</h2><div id="skillBody"><div class="searching"><span class="spinner"></span> 読んだ本を分析中…</div></div><button class="btn ghost" id="closeSkill" style="margin-top:12px">閉じる</button>');
-    var cb=document.getElementById('closeSkill'); if(cb) cb.onclick=closeSheet;
     var need=done.filter(function(b){return !b.genre;});
     Promise.all(need.map(enrichBook)).then(function(){
       if(!geminiKey()) return;
@@ -747,11 +759,11 @@
       if(!needAI.length) return;
       var body=document.getElementById('skillBody'); if(body) body.innerHTML='<div class="searching"><span class="spinner"></span> 🤖 AIが内容を読んで分類中…（'+needAI.length+'冊）</div>';
       return runLimited(needAI, 4, applyAI);
-    }).then(function(){ try{save();}catch(e){} renderSkillBody(done); })
-      .catch(function(){ try{renderSkillBody(done);}catch(e){} });
+    }).then(function(){ try{save();}catch(e){} if(state.view==='skill') renderSkillBody(done); })
+      .catch(function(){ try{ if(state.view==='skill') renderSkillBody(done); }catch(e){} });
   }
 
-  var state = { books: load(), tab:"want", q:"" };
+  var state = { books: load(), tab:"want", q:"", view:"books" };
 
   function load(){
     try{ var raw=localStorage.getItem(STORE_KEY); if(!raw) return []; var d=JSON.parse(raw); return Array.isArray(d.books)?d.books:(Array.isArray(d)?d:[]); }
@@ -1396,6 +1408,7 @@
     el.classList.add(dir>0 ? "slide-r" : "slide-l");
   }
   function gotoTab(status){
+    if(state.view!=="books"){ state.view="books"; applyViewMode(); }
     if(!status || status===state.tab) return;
     var from=SHELF_ORDER.indexOf(state.tab), to=SHELF_ORDER.indexOf(status);
     var dir=(to>=0 && from>=0) ? (to>from?1:-1) : 1;
@@ -1408,7 +1421,7 @@
   }
   document.getElementById("search").addEventListener("input",function(e){ state.q=e.target.value; render(); });
   document.getElementById("fab").addEventListener("click",function(){ openAddSheet(false); });
-  document.getElementById("skillBtn").addEventListener("click",function(){ openSkillSheet(); });
+  document.getElementById("skillBtn").addEventListener("click",function(){ if(state.view==='skill'){ state.view='books'; applyViewMode(); render(); } else { openSkillSheet(); } });
   document.getElementById("scanClose").addEventListener("click",function(){ stopScan(); });
   document.getElementById("scanManual").addEventListener("click",function(){ stopScan(); openAddSheet(true); });
 
