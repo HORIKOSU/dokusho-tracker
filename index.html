@@ -47,6 +47,8 @@
   .skbar-cnt{margin-left:7px;color:var(--accent-dk);font-weight:800}
   .skbar-track{height:9px;border-radius:999px;background:var(--accent-soft);overflow:hidden}
   .skbar-fill{height:100%;border-radius:999px;transition:width .5s cubic-bezier(.22,.61,.36,1)}
+  .skbar[data-genre]{cursor:pointer;padding:4px;margin:-4px;border-radius:10px;transition:background .15s}
+  .skbar[data-genre]:active{background:var(--accent-soft)}
   .skill-title{font-size:17px;margin:2px 0 12px;font-weight:800}
   .sk-note{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6;text-align:center}
   .cov-wrap{margin-top:20px;border-top:1px solid var(--accent-soft);padding-top:16px}
@@ -66,7 +68,15 @@
   .cov-cell.l1 .cc-fill{background:#f0dcb8}
   .cov-cell.l2 .cc-fill{background:#e3b877}
   .cov-cell.l3 .cc-fill{background:#d29e57}
-  .cov-legend{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;justify-content:center}
+  .cov-cell[data-biz]{cursor:pointer}
+  .cov-cell[data-biz]:active{filter:brightness(.94)}
+  .cov-legend{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+  .skd-back{background:none;border:none;color:var(--accent-dk);font-size:13px;font-weight:700;padding:4px 0;margin-bottom:10px;cursor:pointer}
+  .skd-head{margin-bottom:4px}
+  .skd-domain{font-size:11.5px;color:var(--muted);font-weight:700}
+  .skd-title{font-size:17px;font-weight:800;margin:2px 0 2px}
+  .skd-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+  .skd-list{display:flex;flex-direction:column;gap:10px}
   .cov-cap{font-size:10.5px;color:var(--muted);margin:-8px 0 14px;text-align:right}
   .sk-prev{background:var(--accent-soft);border-radius:12px;padding:10px 12px;margin:10px 0 4px}
   .sk-prev.out{color:var(--muted);font-size:12px}
@@ -274,6 +284,7 @@
   </div>
   <div class="grid" id="list"></div>
   <div id="skillPage" style="display:none"></div>
+  <div id="skillDetailPage" style="display:none"></div>
 </main>
 
 <button class="fab" id="fab">
@@ -571,7 +582,7 @@
       h+='<div class="cov-dom"><div class="cov-dom-h"><span>'+esc(d.label)+'</span><span>'+dc+'/'+d.skills.length+'</span></div><div class="cov-cells">';
       d.skills.forEach(function(s){
         var p=cov.pct[s.key]||0, lv=covLevel(p);
-        h+='<span class="cov-cell l'+lv+'" title="'+esc(s.label)+' '+p+'%"><span class="cc-fill" style="width:'+p+'%"></span><span class="cc-tx">'+esc(s.label)+(p>0?' <b>'+p+'%</b>':'')+'</span></span>';
+        h+='<span class="cov-cell l'+lv+'" data-biz="'+s.key+'" title="'+esc(s.label)+' '+p+'%"><span class="cc-fill" style="width:'+p+'%"></span><span class="cc-tx">'+esc(s.label)+(p>0?' <b>'+p+'%</b>':'')+'</span></span>';
       });
       h+='</div></div>';
     });
@@ -728,7 +739,7 @@
     var order=SKILLS.slice().sort(function(a,b){return (r.pct[b.key]||0)-(r.pct[a.key]||0);});
     order.forEach(function(s){
       var c=r.counts[s.key]||0, p=r.pct[s.key]||0, lv=levelFromPct(p);
-      h+='<div class="skbar">';
+      h+='<div class="skbar" data-genre="'+s.key+'">';
       h+='<div class="skbar-head"><span class="skbar-name">'+esc(s.label)+'</span><span class="skbar-lv">Lv.'+lv.lv+' '+lv.name+'<span class="skbar-cnt">'+c+'冊</span></span></div>';
       h+='<div class="skbar-track"><div class="skbar-fill" style="width:'+p+'%;background:'+s.color+'"></div></div>';
       h+='</div>';
@@ -737,14 +748,62 @@
     h+=buildCoverageHTML(computeBizCoverage(done));
     h+='<div class="sk-note">'+(geminiKey()?'🤖 AIが本の内容（あらすじ）を読んで分類しています。':'分野は本のタイトル・内容から自動判定。🤖 AIキーを設定すると内容を読んでより正確に分類します（本を追加→🤖AIで自動分類）。')+'読んだ本が増えるほどゲージが伸びます。</div>';
     body.innerHTML=h;
+    Array.prototype.forEach.call(body.querySelectorAll('.skbar[data-genre]'),function(el){
+      el.onclick=function(){ openSkillDetail('genre', el.dataset.genre, done); };
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('.cov-cell[data-biz]'),function(el){
+      el.onclick=function(){ openSkillDetail('biz', el.dataset.biz, done); };
+    });
+  }
+  // Tap a genre bar or a coverage-map skill cell -> show the matching "done" books, header stays fixed.
+  function openSkillDetail(type, key, doneBooks){
+    state.view='skillDetail'; state.skillDetail={type:type,key:key}; applyViewMode();
+    var label='', domainLabel='';
+    if(type==='genre'){
+      var g=skillOf(key); label=g?g.label:key;
+    }else{
+      BIZ_DOMAINS.forEach(function(d){ d.skills.forEach(function(s){ if(s.key===key){ label=s.label; domainLabel=d.label; } }); });
+    }
+    var books=(doneBooks||state.books.filter(function(b){return b.status==='done';})).filter(function(b){
+      if(type==='genre') return classifyBook(b)===key;
+      return (b.bizskill||mapToBizSkill(b))===key;
+    });
+    var page=document.getElementById('skillDetailPage');
+    var h='<button class="skd-back" id="skdBack">← スキルに戻る</button>';
+    h+='<div class="skd-head">'+(domainLabel?'<div class="skd-domain">'+esc(domainLabel)+'</div>':'')+'<div class="skd-title">'+esc(label)+'</div>';
+    h+='<div class="skd-sub">この分野の「読んだ本」　'+books.length+'冊</div></div>';
+    if(!books.length){
+      h+='<div class="sk-empty">この分野に該当する「読んだ本」はまだありません。</div>';
+    }else{
+      h+='<div class="skd-list" id="skdList"></div>';
+    }
+    page.innerHTML=h;
+    document.getElementById('skdBack').onclick=function(){ state.view='skill'; applyViewMode(); try{window.scrollTo(0,0);}catch(e){} };
+    if(books.length){
+      var list=document.getElementById('skdList');
+      books.forEach(function(b){
+        var row=document.createElement('div'); row.className='res';
+        row.appendChild(coverNode(b,'rescover'));
+        var d=document.createElement('div'); d.className='resinfo';
+        var meta=[]; if(b.author)meta.push(b.author); if(b.publisher)meta.push(b.publisher);
+        d.innerHTML='<div class="restitle"></div><div class="resmeta"></div>';
+        d.querySelector('.restitle').textContent=b.title||'(無題)';
+        d.querySelector('.resmeta').textContent=meta.join(' ／ ');
+        row.appendChild(d);
+        row.onclick=function(){ openBookMenu(b); };
+        list.appendChild(row);
+      });
+    }
+    try{ window.scrollTo(0,0); }catch(e){}
   }
   function applyViewMode(){
-    var skill = state.view==='skill';
-    var tb=document.querySelector('.toolbar'); if(tb) tb.style.display = skill?'none':'';
-    var ls=document.getElementById('list'); if(ls) ls.style.display = skill?'none':'';
+    var skill = state.view==='skill', detail = state.view==='skillDetail', away = skill||detail;
+    var tb=document.querySelector('.toolbar'); if(tb) tb.style.display = away?'none':'';
+    var ls=document.getElementById('list'); if(ls) ls.style.display = away?'none':'';
     var sp=document.getElementById('skillPage'); if(sp) sp.style.display = skill?'block':'none';
-    var fab=document.getElementById('fab'); if(fab) fab.style.display = skill?'none':'';
-    var sb=document.getElementById('skillBtn'); if(sb) sb.textContent = skill?'← 本棚に戻る':'📊 スキル';
+    var sd=document.getElementById('skillDetailPage'); if(sd) sd.style.display = detail?'block':'none';
+    var fab=document.getElementById('fab'); if(fab) fab.style.display = away?'none':'';
+    var sb=document.getElementById('skillBtn'); if(sb) sb.textContent = away?'← 本棚に戻る':'📊 スキル';
   }
   function openSkillSheet(){
     state.view='skill'; applyViewMode();
@@ -1421,11 +1480,11 @@
   }
   document.getElementById("search").addEventListener("input",function(e){ state.q=e.target.value; render(); });
   document.getElementById("fab").addEventListener("click",function(){ openAddSheet(false); });
-  document.getElementById("skillBtn").addEventListener("click",function(){ if(state.view==='skill'){ state.view='books'; applyViewMode(); render(); } else { openSkillSheet(); } });
+  document.getElementById("skillBtn").addEventListener("click",function(){ if(state.view==='skill'||state.view==='skillDetail'){ state.view='books'; applyViewMode(); render(); } else { openSkillSheet(); } });
   document.getElementById("scanClose").addEventListener("click",function(){ stopScan(); });
   document.getElementById("scanManual").addEventListener("click",function(){ stopScan(); openAddSheet(true); });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode };
 
   render();
 })();
