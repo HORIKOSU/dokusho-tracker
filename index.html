@@ -36,6 +36,32 @@
   .brand h1{font-size:19px;margin:0;font-weight:800;letter-spacing:.02em}
   .brand .total{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600;text-align:right;line-height:1.25}
   .brand .total b{font-size:13px;color:var(--accent-dk);font-weight:800}
+
+  /* Hero stat card: total books read, front and center */
+  .hero-stat{position:relative;overflow:hidden;margin:2px 0 16px;padding:20px 18px;border-radius:20px;text-align:center;color:#fff;
+    background:linear-gradient(135deg,#c0824f,#8c5030);box-shadow:0 8px 22px rgba(140,80,48,.30)}
+  .hero-stat::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:radial-gradient(circle at 14% 22%, rgba(255,255,255,.20) 0 3px, transparent 4px),
+                      radial-gradient(circle at 88% 18%, rgba(255,255,255,.16) 0 2.5px, transparent 3.5px),
+                      radial-gradient(circle at 78% 82%, rgba(255,255,255,.14) 0 3px, transparent 4px),
+                      radial-gradient(circle at 22% 86%, rgba(255,255,255,.16) 0 2.5px, transparent 3.5px),
+                      radial-gradient(circle at 50% 92%, rgba(255,255,255,.12) 0 2px, transparent 3px)}
+  .hero-num{position:relative;font-size:46px;font-weight:900;line-height:1;letter-spacing:-.02em;
+    animation:heroPop .45s cubic-bezier(.34,1.56,.64,1)}
+  .hero-num small{font-size:17px;font-weight:700;margin-left:3px;opacity:.85}
+  .hero-label{position:relative;font-size:13px;font-weight:800;margin-top:5px;opacity:.95}
+  .hero-sub{position:relative;display:inline-block;margin-top:10px;font-size:12px;font-weight:700;
+    background:rgba(255,255,255,.18);padding:5px 13px;border-radius:999px}
+  @keyframes heroPop{0%{transform:scale(.72);opacity:0}100%{transform:scale(1);opacity:1}}
+  .hero-gauge{position:relative;margin-top:14px;display:flex;flex-direction:column;align-items:center}
+  .hero-gauge-ring-wrap{position:relative;width:96px;height:96px}
+  .hero-gauge-ring{transform:rotate(-90deg)}
+  .hgr-track{fill:none;stroke:rgba(255,255,255,.28);stroke-width:10}
+  .hgr-fill{fill:none;stroke:#fff;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .7s cubic-bezier(.34,1.2,.4,1)}
+  .hero-gauge-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
+  .hero-gauge-ring-center b{font-size:19px;font-weight:800;line-height:1.15}
+  .hero-gauge-ring-center span{font-size:11px;opacity:.85;margin-top:1px}
+  .hero-gauge-label{margin-top:8px;font-size:11.5px;font-weight:700;opacity:.92;text-align:center}
   .skillbtn{margin-left:8px;border:none;background:var(--accent-soft);color:var(--accent-dk);font-family:inherit;font-weight:800;font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap}
   .skillbtn:active{transform:scale(.95)}
   .sk-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:26px 6px;line-height:1.7}
@@ -116,6 +142,9 @@
   .search svg{flex:0 0 auto;opacity:.5}
 
   .grid{display:grid;grid-template-columns:1fr;gap:10px}
+  .data-footer{text-align:center;font-size:12px;color:#9a8c7a;margin:22px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+  .data-footer a{color:#9a8c7a;text-decoration:underline}
+  #monthlyBox .cov-wrap.mo-top{margin-top:0;padding-top:0;border-top:none;margin-bottom:14px}
   .grid.slide-r,.grid.slide-l{animation:shelfIn .18s ease}
   @keyframes shelfIn{from{opacity:.35}to{opacity:1}}
   @media (prefers-reduced-motion: reduce){ .grid.slide-r,.grid.slide-l{animation:none} }
@@ -293,13 +322,19 @@
 </header>
 
 <main>
+  <div class="hero-stat" id="heroStat"></div>
   <div class="toolbar">
     <div class="search">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <input id="search" type="search" placeholder="登録済みの本を絞り込み" autocomplete="off">
     </div>
   </div>
+  <div id="monthlyBox" style="display:none"></div>
   <div class="grid" id="list"></div>
+  <div class="data-footer" id="dataFooter">
+    データ：<a href="#" id="importLinkMain">📥 取り込み（インポート）</a> ／ <a href="#" id="exportLinkMain">📤 書き出し（バックアップ）</a>
+    <input id="importFileMain" type="file" accept=".json,application/json" style="display:none">
+  </div>
   <div id="skillPage" style="display:none"></div>
   <div id="skillDetailPage" style="display:none"></div>
 </main>
@@ -878,8 +913,11 @@
   }
   function applyViewMode(){
     var skill = state.view==='skill', detail = state.view==='skillDetail', away = skill||detail;
+    var hs=document.getElementById('heroStat'); if(hs) hs.style.display = away?'none':'';
     var tb=document.querySelector('.toolbar'); if(tb) tb.style.display = away?'none':'';
     var ls=document.getElementById('list'); if(ls) ls.style.display = away?'none':'';
+    var df=document.getElementById('dataFooter'); if(df) df.style.display = away?'none':'';
+    var mo=document.getElementById('monthlyBox'); if(mo) mo.style.display = away?'none':(state.tab==='done'?'block':'none');
     var sp=document.getElementById('skillPage'); if(sp) sp.style.display = skill?'block':'none';
     var sd=document.getElementById('skillDetailPage'); if(sd) sd.style.display = detail?'block':'none';
     var fab=document.getElementById('fab'); if(fab) fab.style.display = away?'none':'';
@@ -1102,10 +1140,24 @@
     var counts={want:0,stack:0,reading:0,done:0};
     state.books.forEach(function(b){ if(counts[b.status]!=null) counts[b.status]++; });
     STATUSES.forEach(function(s){ document.getElementById("cnt-"+s.key).textContent = counts[s.key]; });
-    document.getElementById("totalCount").innerHTML = "読了 <b>"+counts.done+"</b>冊　全"+state.books.length+"冊";
+    document.getElementById("totalCount").textContent = "全"+state.books.length+"冊";
+    renderHeroStat(counts.done);
     Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){
       t.setAttribute("aria-selected", t.dataset.status===state.tab ? "true":"false");
     });
+    var mb=document.getElementById("monthlyBox");
+    if(mb){
+      if(state.tab==="done"){
+        mb.style.display="block";
+        mb.innerHTML='<div class="cov-wrap mo-top"><div class="cov-head"><span class="cov-title">📅 月別 読了冊数</span><span class="cov-rate">直近12か月</span></div>'
+          +buildMonthlyChart(computeMonthly(state.books,12))+'</div>';
+        Array.prototype.forEach.call(mb.querySelectorAll("[data-month]"),function(el){
+          el.onclick=function(){ openSkillDetail("month", el.dataset.month); };
+        });
+      }else{
+        mb.style.display="none"; mb.innerHTML="";
+      }
+    }
     var q = state.q.trim().toLowerCase();
     var items = state.books.filter(function(b){ return b.status===state.tab; });
     if(q){ items = items.filter(function(b){
@@ -1122,6 +1174,42 @@
       listEl.appendChild(e); return;
     }
     items.forEach(function(b){ listEl.appendChild(cardEl(b)); });
+  }
+  // Big celebratory "total books read" card, always shown at the top of the bookshelf
+  function nextMilestone(totalDone){
+    var step = totalDone<50 ? 10 : totalDone<100 ? 25 : totalDone<500 ? 50 : 100;
+    var prev = Math.floor(totalDone/step)*step;
+    var next = prev+step;
+    return { prev:prev, next:next, remain: next-totalDone, pct: Math.max(0,Math.min(100,((totalDone-prev)/(next-prev))*100)) };
+  }
+  function renderHeroStat(totalDone){
+    var el=document.getElementById("heroStat"); if(!el) return;
+    var thisMonthKey=new Date().getFullYear()+"-"+String(new Date().getMonth()+1).padStart(2,"0");
+    var thisMonth=0;
+    state.books.forEach(function(b){ if(doneMonthKey(b)===thisMonthKey) thisMonth++; });
+    var sub;
+    if(totalDone===0){ sub="📚 最初の1冊を読んでみましょう！"; }
+    else if(thisMonth>0){ sub="🎉 今月はもう "+thisMonth+" 冊 読了！"; }
+    else if(totalDone>=50){ sub="🏆 読書マスターの域です！"; }
+    else if(totalDone>=20){ sub="🔥 いいペースで積み上がっています"; }
+    else { sub="✨ ここまでで "+totalDone+" 冊 読了"; }
+    var ms=nextMilestone(totalDone);
+    var R=42, C=2*Math.PI*R;
+    var dashoffset=C*(1-ms.pct/100);
+    var gauge='<div class="hero-gauge">'
+      +'<div class="hero-gauge-ring-wrap">'
+        +'<svg class="hero-gauge-ring" viewBox="0 0 100 100" width="96" height="96">'
+          +'<circle class="hgr-track" cx="50" cy="50" r="'+R+'"/>'
+          +'<circle class="hgr-fill" cx="50" cy="50" r="'+R+'" style="stroke-dasharray:'+C.toFixed(1)+';stroke-dashoffset:'+dashoffset.toFixed(1)+'"/>'
+        +'</svg>'
+        +'<div class="hero-gauge-ring-center"><b>あと'+ms.remain+'</b><span>冊</span></div>'
+      +'</div>'
+      +'<div class="hero-gauge-label">次の'+ms.next+'冊まで</div>'
+      +'</div>';
+    el.innerHTML='<div class="hero-num">'+totalDone+'<small>冊</small></div>'
+      +'<div class="hero-label">📖 読んだ本の合計</div>'
+      +'<div class="hero-sub">'+sub+'</div>'
+      +gauge;
   }
 
   function coverNode(b, cls){
@@ -1317,8 +1405,6 @@
     h+='<button class="btn ghost" id="cancelBtn">閉じる</button>';
     h+='<div style="text-align:center;margin-top:6px"><a href="#" id="keyLink" style="font-size:12px;color:#9a8c7a;text-decoration:underline">検索がうまくいかない時（APIキー設定）</a></div>';
     h+='<div style="text-align:center;margin-top:4px"><a href="#" id="aiLink" style="font-size:12px;color:#9a8c7a;text-decoration:underline">🤖 AIで内容から自動分類（Gemini APIキー）</a></div>';
-    h+='<div style="text-align:center;margin-top:8px;font-size:12px;color:#9a8c7a">データ：<a href="#" id="importLink" style="color:#9a8c7a;text-decoration:underline">取り込み（インポート）</a> ／ <a href="#" id="exportLink" style="color:#9a8c7a;text-decoration:underline">書き出し（バックアップ）</a></div>';
-    h+='<input id="importFile" type="file" accept=".json,application/json" style="display:none">';
     openSheet(h);
     var inp=document.getElementById("qInput");
     document.getElementById("camBtn").onclick=function(){ closeSheet(); startScan(); };
@@ -1328,17 +1414,6 @@
       var v=window.prompt("Gemini APIキーを貼り付け（空欄でOKすると解除）\nGoogle AI Studio（無料）で取得できます。設定後、スキル画面を開くとAIが内容を読んで分類します。", cur);
       if(v===null) return; v=(v||'').trim();
       try{ if(v){ localStorage.setItem('gemini_api_key',v); toast('AIキーを保存しました'); } else { localStorage.removeItem('gemini_api_key'); toast('AIキーを解除しました'); } }catch(err){ toast('保存に失敗しました'); }
-    };
-    document.getElementById("exportLink").onclick=function(e){ e.preventDefault(); exportBooks(); };
-    document.getElementById("importLink").onclick=function(e){ e.preventDefault(); document.getElementById("importFile").click(); };
-    document.getElementById("importFile").onchange=function(e){
-      var f=e.target.files&&e.target.files[0]; e.target.value="";
-      if(!f) return;
-      var rd=new FileReader();
-      rd.onload=function(){ try{ var data=JSON.parse(rd.result); var n=importBooks(data); toast(n.added+"冊を取り込みました"+(n.skipped?"（重複"+n.skipped+"冊はスキップ）":"")); render(); closeSheet(); }
-        catch(err){ toast("読み込めませんでした（JSON形式をご確認ください）"); } };
-      rd.onerror=function(){ toast("ファイルを読み込めませんでした"); };
-      rd.readAsText(f);
     };
     document.getElementById("keyLink").onclick=function(e){ e.preventDefault();
       var cur=gbKey();
@@ -1600,6 +1675,17 @@
   document.getElementById("skillBtn").addEventListener("click",function(){ if(state.view==='skill'||state.view==='skillDetail'){ state.view='books'; applyViewMode(); render(); } else { openSkillSheet(); } });
   document.getElementById("scanClose").addEventListener("click",function(){ stopScan(); });
   document.getElementById("scanManual").addEventListener("click",function(){ stopScan(); openAddSheet(true); });
+  document.getElementById("exportLinkMain").addEventListener("click",function(e){ e.preventDefault(); exportBooks(); });
+  document.getElementById("importLinkMain").addEventListener("click",function(e){ e.preventDefault(); document.getElementById("importFileMain").click(); });
+  document.getElementById("importFileMain").addEventListener("change",function(e){
+    var f=e.target.files&&e.target.files[0]; e.target.value="";
+    if(!f) return;
+    var rd=new FileReader();
+    rd.onload=function(){ try{ var data=JSON.parse(rd.result); var n=importBooks(data); toast(n.added+"冊を取り込みました"+(n.skipped?"（重複"+n.skipped+"冊はスキップ）":"")); render(); }
+      catch(err){ toast("読み込めませんでした（JSON形式をご確認ください）"); } };
+    rd.onerror=function(){ toast("ファイルを読み込めませんでした"); };
+    rd.readAsText(f);
+  });
 
   window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, render:render };
 
