@@ -225,6 +225,12 @@
   .prev .t{font-size:16px;font-weight:800;margin:0 0 5px;line-height:1.35}
   .prev .m{font-size:13px;color:var(--muted);line-height:1.55}
   .prev .status-now{display:inline-block;margin-top:7px;font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent-dk)}
+  .prev .status-now.warn{background:#f7dcae;color:#8a4b12}
+
+  /* "already registered" badges (search/scan candidate lists + confirm sheet) */
+  .res.owned{border-color:#e7bd83;background:#fff8ec}
+  .res-badge{display:block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:6px;margin-bottom:5px;background:var(--accent-soft);color:var(--accent-dk);white-space:normal}
+  .res-badge.warn{background:#f7dcae;color:#8a4b12}
 
   /* Scanner */
   .scanner{position:fixed;inset:0;z-index:60;background:#000;display:none;flex-direction:column}
@@ -331,6 +337,18 @@
   ];
   function getVar(n){try{return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}catch(e){return "#999";}}
   function statusOf(k){for(var i=0;i<STATUSES.length;i++){if(STATUSES[i].key===k)return STATUSES[i];}return STATUSES[0];}
+  // Already-registered lookup, used to warn against buying a book twice (search results, ISBN-scan candidates, confirm sheet)
+  function findExistingByIsbn(isbn){
+    if(!isbn) return null;
+    return state.books.filter(function(b){ return b.isbn && b.isbn===isbn; })[0] || null;
+  }
+  function ownedBadgeHtml(existing){
+    if(!existing) return "";
+    var st=statusOf(existing.status);
+    var warn = existing.status!=="want"; // already own a physical/read copy -> stronger warning
+    var msg = warn ? "既にお持ちです：重複購入に注意" : "登録済み";
+    return '<span class="res-badge'+(warn?" warn":"")+'">'+st.icon+' '+esc(st.label)+'・'+msg+'</span>';
+  }
 
   /* ---------- Skill dashboard (from 読んだ本) ---------- */
   var SKILLS=[
@@ -1126,7 +1144,7 @@
     var m=[]; if(meta.author)m.push(esc(meta.author)); if(meta.publisher)m.push(esc(meta.publisher));
     if(meta.pubdate)m.push(esc(String(meta.pubdate)));
     h+='<div class="m">'+(m.join("<br>")||("ISBN "+esc(meta.isbn||"-")))+'</div>';
-    if(existing){ h+='<span class="status-now">登録済み: '+statusOf(existing.status).icon+' '+statusOf(existing.status).label+'</span>'; }
+    if(existing){ var exWarn=existing.status!=="want"; h+='<span class="status-now'+(exWarn?" warn":"")+'">'+(exWarn?"⚠️ 既にお持ちです：":"登録済み：")+statusOf(existing.status).icon+' '+statusOf(existing.status).label+'</span>'; }
     h+='</div></div>';
     h+='<div id="skPrev">'+bizPreview(meta)+'</div>';
     h+='<h2>'+(existing?"棚を移動しますか？":"どの棚に入れますか？")+'</h2>';
@@ -1270,13 +1288,16 @@
       if(!list || !list.length){
         box.innerHTML='<div class="searching">「'+esc(q)+'」に一致する本が見つかりませんでした。<br>別の言葉やISBNでもお試しください。</div>'; return;
       }
-      box.innerHTML='<div class="reslabel">'+list.length+'件の候補（タップして棚を選択）</div>';
+      var ownedCount=0;
+      list.forEach(function(m){ if(findExistingByIsbn(m.isbn)) ownedCount++; });
+      box.innerHTML='<div class="reslabel">'+list.length+'件の候補（タップして棚を選択）'+(ownedCount?'　⚠️ うち'+ownedCount+'件は登録済み':'')+'</div>';
       list.forEach(function(m){
-        var row=document.createElement("div"); row.className="res";
+        var existing=findExistingByIsbn(m.isbn);
+        var row=document.createElement("div"); row.className="res"+(existing?" owned":"");
         row.appendChild(coverNode(m,"rescover"));
         var d=document.createElement("div"); d.className="resinfo";
         var meta=[]; if(m.author)meta.push(esc(m.author)); if(m.publisher)meta.push(esc(m.publisher)); if(m.pubdate)meta.push(esc(String(m.pubdate).slice(0,4)));
-        d.innerHTML='<div class="restitle">'+esc(m.title||"(無題)")+'</div><div class="resmeta">'+meta.join(" ／ ")+'</div>';
+        d.innerHTML=ownedBadgeHtml(existing)+'<div class="restitle">'+esc(m.title||"(無題)")+'</div><div class="resmeta">'+meta.join(" ／ ")+'</div>';
         row.appendChild(d);
         row.onclick=function(){ presentFound(m,{back:reopen}); };
         box.appendChild(row);
