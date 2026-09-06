@@ -34,7 +34,8 @@
   .brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
   .brand .logo{font-size:22px}
   .brand h1{font-size:19px;margin:0;font-weight:800;letter-spacing:.02em}
-  .brand .total{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600}
+  .brand .total{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600;text-align:right;line-height:1.25}
+  .brand .total b{font-size:13px;color:var(--accent-dk);font-weight:800}
   .skillbtn{margin-left:8px;border:none;background:var(--accent-soft);color:var(--accent-dk);font-family:inherit;font-weight:800;font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap}
   .skillbtn:active{transform:scale(.95)}
   .sk-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:26px 6px;line-height:1.7}
@@ -231,6 +232,14 @@
   .res.owned{border-color:#e7bd83;background:#fff8ec}
   .res-badge{display:block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:6px;margin-bottom:5px;background:var(--accent-soft);color:var(--accent-dk);white-space:normal}
   .res-badge.warn{background:#f7dcae;color:#8a4b12}
+
+  /* Per-book status-change history log */
+  .hist-wrap{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+  .hist-title{font-size:11.5px;font-weight:800;color:var(--muted);margin-bottom:7px}
+  .hist-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);padding:3px 0}
+  .hist-dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+  .hist-label{flex:1;min-width:0}
+  .hist-date{color:var(--muted);font-size:11.5px;white-space:nowrap}
 
   /* Scanner */
   .scanner{position:fixed;inset:0;z-index:60;background:#000;display:none;flex-direction:column}
@@ -665,6 +674,48 @@
     svg+='</svg>';
     return svg;
   }
+  // Which "YYYY-MM" a currently-done book was finished in (last time it entered 読んだ本), or null
+  function doneMonthKey(b){
+    if(b.status!=='done') return null;
+    var hist=ensureHistory(b);
+    var doneEntries=hist.filter(function(e){ return e.status==='done'; });
+    if(!doneEntries.length) return null;
+    var last=doneEntries[doneEntries.length-1];
+    var d=new Date(last.at); if(isNaN(d.getTime())) return null;
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  }
+  function computeMonthly(books, months){
+    months=months||12;
+    var now=new Date(), buckets=[];
+    for(var i=months-1;i>=0;i--){
+      var d=new Date(now.getFullYear(), now.getMonth()-i, 1);
+      buckets.push({key:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label:(d.getMonth()+1)+'月', showYear:(d.getMonth()===0), year:d.getFullYear(), count:0});
+    }
+    var idx={}; buckets.forEach(function(b,i){ idx[b.key]=i; });
+    (books||[]).forEach(function(b){
+      var k=doneMonthKey(b);
+      if(k!=null && idx[k]!=null) buckets[idx[k]].count++;
+    });
+    return buckets;
+  }
+  function buildMonthlyChart(buckets){
+    var maxc=1; buckets.forEach(function(b){ if(b.count>maxc) maxc=b.count; });
+    var n=buckets.length, w=320, h=136, padB=22, padT=14, gap=4;
+    var barW=(w-gap*(n-1))/n;
+    var svg='<svg viewBox="0 0 '+w+' '+h+'" width="100%" style="max-width:360px;display:block;margin:0 auto">';
+    buckets.forEach(function(b,i){
+      var bh=(h-padT-padB)*(b.count/maxc);
+      var x=i*(barW+gap), y=h-padB-Math.max(bh,b.count>0?4:0);
+      var barH=Math.max(bh,b.count>0?4:1);
+      svg+='<g data-month="'+b.key+'" style="cursor:pointer">';
+      svg+='<rect x="'+x.toFixed(1)+'" y="'+(h-padB-barH).toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+barH.toFixed(1)+'" rx="3" fill="'+(b.count>0?'#b5713f':'#eee3d5')+'"/>';
+      if(b.count>0){ svg+='<text x="'+(x+barW/2).toFixed(1)+'" y="'+(h-padB-barH-4).toFixed(1)+'" font-size="9.5" font-weight="800" fill="#8c5030" text-anchor="middle">'+b.count+'</text>'; }
+      svg+='<text x="'+(x+barW/2).toFixed(1)+'" y="'+(h-8).toFixed(1)+'" font-size="8" fill="#9a8c7a" text-anchor="middle">'+(b.showYear?"'"+String(b.year).slice(2)+"/":"")+b.label+'</text>';
+      svg+='</g>';
+    });
+    svg+='</svg>';
+    return svg;
+  }
   /* ---------- AI (Gemini) content-based classification ---------- */
   var GEMINI_MODELS=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash','gemini-2.5-flash-preview'];
   var AI_VER=6; // bump to force re-classification with an improved prompt
@@ -754,6 +805,9 @@
     h+='<div><span class="sk-big" style="font-size:17px">'+esc(top.short)+'</span><span class="sk-cap">一番の強み</span></div>';
     h+='<div><span class="sk-big">'+filled+'<span style="font-size:14px">/'+SKILLS.length+'</span></span><span class="sk-cap">分野を開拓</span></div></div>';
     h+='<div class="sk-radar">'+buildRadar(r.pct)+'</div>';
+    h+='<div class="cov-wrap"><div class="cov-head"><span class="cov-title">📅 月別 読了冊数</span><span class="cov-rate">直近12か月</span></div>';
+    h+=buildMonthlyChart(computeMonthly(done, 12));
+    h+='</div>';
     h+='<div class="sk-bars">';
     // sort by gauge % desc
     var order=SKILLS.slice().sort(function(a,b){return (r.pct[b.key]||0)-(r.pct[a.key]||0);});
@@ -774,26 +828,32 @@
     Array.prototype.forEach.call(body.querySelectorAll('.cov-cell[data-biz]'),function(el){
       el.onclick=function(){ openSkillDetail('biz', el.dataset.biz, done); };
     });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-month]'),function(el){
+      el.onclick=function(){ openSkillDetail('month', el.dataset.month, done); };
+    });
   }
   // Tap a genre bar or a coverage-map skill cell -> show the matching "done" books, header stays fixed.
   function openSkillDetail(type, key, doneBooks){
     state.view='skillDetail'; state.skillDetail={type:type,key:key}; applyViewMode();
-    var label='', domainLabel='';
+    var label='', domainLabel='', subLabel='この分野の「読んだ本」';
     if(type==='genre'){
       var g=skillOf(key); label=g?g.label:key;
+    }else if(type==='month'){
+      var parts=key.split('-'); label=parts[0]+'年'+parseInt(parts[1],10)+'月に読んだ本'; subLabel='この月に読み終えた本';
     }else{
       BIZ_DOMAINS.forEach(function(d){ d.skills.forEach(function(s){ if(s.key===key){ label=s.label; domainLabel=d.label; } }); });
     }
     var books=(doneBooks||state.books.filter(function(b){return b.status==='done';})).filter(function(b){
       if(type==='genre') return classifyBook(b)===key;
+      if(type==='month') return doneMonthKey(b)===key;
       return (b.bizskill||mapToBizSkill(b))===key;
     });
     var page=document.getElementById('skillDetailPage');
     var h='<button class="skd-back" id="skdBack">← スキルに戻る</button>';
     h+='<div class="skd-head">'+(domainLabel?'<div class="skd-domain">'+esc(domainLabel)+'</div>':'')+'<div class="skd-title">'+esc(label)+'</div>';
-    h+='<div class="skd-sub">この分野の「読んだ本」　'+books.length+'冊</div></div>';
+    h+='<div class="skd-sub">'+subLabel+'　'+books.length+'冊</div></div>';
     if(!books.length){
-      h+='<div class="sk-empty">この分野に該当する「読んだ本」はまだありません。</div>';
+      h+='<div class="sk-empty">'+(type==='month'?'この月に読み終えた本はまだありません。':'この分野に該当する「読んだ本」はまだありません。')+'</div>';
     }else{
       h+='<div class="skd-list" id="skdList"></div>';
     }
@@ -843,6 +903,7 @@
   }
 
   var state = { books: load(), tab:"want", q:"", view:"books" };
+  state.books.forEach(ensureHistory);
 
   function load(){
     try{ var raw=localStorage.getItem(STORE_KEY); if(!raw) return []; var d=JSON.parse(raw); return Array.isArray(d.books)?d.books:(Array.isArray(d)?d:[]); }
@@ -854,6 +915,17 @@
   }
   function uid(){ return "b"+Date.now().toString(36)+Math.floor(Math.random()*1e5).toString(36); }
   function nowIso(){ return new Date().toISOString(); }
+  // Status-change log: when a book was added / moved between shelves ("登録した日"のログ)
+  function pushHistory(b, status, at){
+    b.history = b.history || [];
+    b.history.push({status:status, at: at || nowIso()});
+    if(b.history.length>200) b.history=b.history.slice(-200);
+  }
+  // Best-effort backfill for books saved before history tracking existed
+  function ensureHistory(b){
+    if(!b.history || !b.history.length){ b.history=[{status:b.status, at:b.updatedAt||b.addedAt||nowIso()}]; }
+    return b.history;
+  }
 
   /* ---------- Import / Export (migration & backup) ---------- */
   function exportBooks(){
@@ -868,6 +940,9 @@
   function normImportStatus(s){ return (['want','stack','reading','done'].indexOf(s)>=0)?s:'want'; }
   function normalizeImported(b){
     var addedAt = b.addedAt ? (typeof b.addedAt==='number'? new Date(b.addedAt).toISOString() : b.addedAt) : nowIso();
+    var status = normImportStatus(b.status);
+    var finishedAt = b.finishedAt ? (typeof b.finishedAt==='number'? new Date(b.finishedAt).toISOString() : b.finishedAt) : null;
+    var histAt = (status==='done' && finishedAt) ? finishedAt : addedAt;
     return {
       id: b.id || uid(),
       isbn: b.isbn || '',
@@ -876,10 +951,11 @@
       publisher: b.publisher || '',
       pubdate: b.pubdate || b.publishedDate || '',
       cover: b.cover || '',
-      status: normImportStatus(b.status),
+      status: status,
       addedAt: addedAt, updatedAt: nowIso(),
       source: b.source || 'import',
-      memo: b.memo || '', rating: b.rating || 0
+      memo: b.memo || '', rating: b.rating || 0,
+      history: [{status: status, at: histAt}]
     };
   }
   function importBooks(data){
@@ -1026,7 +1102,7 @@
     var counts={want:0,stack:0,reading:0,done:0};
     state.books.forEach(function(b){ if(counts[b.status]!=null) counts[b.status]++; });
     STATUSES.forEach(function(s){ document.getElementById("cnt-"+s.key).textContent = counts[s.key]; });
-    document.getElementById("totalCount").textContent = "全"+state.books.length+"冊";
+    document.getElementById("totalCount").innerHTML = "読了 <b>"+counts.done+"</b>冊　全"+state.books.length+"冊";
     Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){
       t.setAttribute("aria-selected", t.dataset.status===state.tab ? "true":"false");
     });
@@ -1097,6 +1173,20 @@
     return card;
   }
 
+  function fmtDate(iso){
+    try{ var d=new Date(iso); if(isNaN(d.getTime())) return "";
+      return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0");
+    }catch(e){ return ""; }
+  }
+  function historyHtml(b){
+    var h=ensureHistory(b);
+    var rows=h.slice().reverse().map(function(e){
+      var st=statusOf(e.status);
+      return '<div class="hist-row"><span class="hist-dot" style="background:'+st.color+'"></span><span class="hist-label">'+st.icon+' '+esc(st.label)+'</span><span class="hist-date">'+fmtDate(e.at)+'</span></div>';
+    }).join('');
+    return '<div class="hist-wrap"><div class="hist-title">履歴</div>'+rows+'</div>';
+  }
+
   /* ---------- Book menu (move / delete) ---------- */
   function openBookMenu(b){
     var st=statusOf(b.status);
@@ -1113,6 +1203,7 @@
       h+='<button class="shelf-btn'+(s.key===b.status?" cur":"")+'" data-move="'+s.key+'"><span class="dot" style="background:'+s.color+'"></span>'+s.label+'</button>';
     });
     h+='</div>';
+    h+=historyHtml(b);
     h+='<button class="btn danger" id="delBtn">この本を削除</button>';
     h+='<button class="btn ghost" id="closeBtn">閉じる</button>';
     openSheet(h);
@@ -1124,7 +1215,7 @@
     Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-move]"),function(btn){
       btn.onclick=function(){
         var to=btn.dataset.move;
-        if(to!==b.status){ b.status=to; b.updatedAt=nowIso(); save(); render(); toast("「"+statusOf(to).label+"」に移動しました"); }
+        if(to!==b.status){ b.status=to; b.updatedAt=nowIso(); pushHistory(b,to); save(); render(); toast("「"+statusOf(to).label+"」に移動しました"); }
         closeSheet();
       };
     });
@@ -1171,6 +1262,7 @@
         var mt=document.getElementById("manualTitle");
         if(mt && mt.value.trim() && !meta.title) meta.title=mt.value.trim();
         if(existing){
+          if(existing.status!==to) pushHistory(existing,to);
           existing.status=to; existing.updatedAt=nowIso();
           if(!existing.title && meta.title) existing.title=meta.title;
           if(!existing.cover && meta.cover) existing.cover=meta.cover;
@@ -1183,10 +1275,12 @@
           if(meta.aiDone) existing.aiDone=true;
           save(); toast("「"+statusOf(to).label+"」に移動しました");
         }else{
+          var addedNow=nowIso();
           var bk={
             id:uid(), isbn:meta.isbn||"", title:meta.title||"", author:meta.author||"",
             publisher:meta.publisher||"", pubdate:meta.pubdate||"", cover:meta.cover||"",
-            status:to, addedAt:nowIso(), updatedAt:nowIso(), source:meta.source||""
+            status:to, addedAt:addedNow, updatedAt:addedNow, source:meta.source||"",
+            history:[{status:to, at:addedNow}]
           };
           if(meta.catz) bk.catz=meta.catz;
           if(meta.desc) bk.desc=meta.desc;
@@ -1507,7 +1601,7 @@
   document.getElementById("scanClose").addEventListener("click",function(){ stopScan(); });
   document.getElementById("scanManual").addEventListener("click",function(){ stopScan(); openAddSheet(true); });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, render:render };
 
   render();
 })();
