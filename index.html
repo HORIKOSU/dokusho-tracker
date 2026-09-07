@@ -1083,8 +1083,10 @@
     });
   }
   function fetchOpenBD(isbn13){
-    return fetch("https://api.openbd.jp/v1/get?isbn="+encodeURIComponent(isbn13))
-      .then(function(r){ return r.ok ? r.json() : null; })
+    return limitOpenBD(function(){
+      return fetch("https://api.openbd.jp/v1/get?isbn="+encodeURIComponent(isbn13))
+        .then(function(r){ return r.ok ? r.json() : null; });
+    })
       .then(function(arr){
         if(!arr || !arr[0]) return null;
         var s = arr[0].summary || {};
@@ -1110,6 +1112,24 @@
       pages: v.pageCount || 0
     };
   }
+  // Simple concurrency limiter: caps how many requests to a given API are in flight
+  // at once. Without this, rendering a shelf of 50-100+ books fires that many
+  // simultaneous Google Books/openBD requests on every render, which trips Google's
+  // anonymous (no API key) rate limit (HTTP 429) very quickly.
+  function makeLimiter(max){
+    var active=0, queue=[];
+    function pump(){
+      if(active>=max || !queue.length) return;
+      active++;
+      var job=queue.shift();
+      job.fn().then(function(v){ active--; pump(); job.resolve(v); }, function(e){ active--; pump(); job.reject(e); });
+    }
+    return function(fn){
+      return new Promise(function(resolve,reject){ queue.push({fn:fn,resolve:resolve,reject:reject}); pump(); });
+    };
+  }
+  var limitGoogleBooks = makeLimiter(3);
+  var limitOpenBD = makeLimiter(4);
   // Google Books access: try fetch first, fall back to JSONP (works on file:// and when CORS/fetch is blocked)
   function jsonp(url){
     return new Promise(function(resolve,reject){
@@ -1126,9 +1146,22 @@
   function gbKey(){ try{ return (localStorage.getItem("gb_api_key")||"").trim(); }catch(e){ return ""; } }
   function gbFetch(url){
     var k=gbKey(); if(k){ url += (url.indexOf("?")>=0?"&":"?")+"key="+encodeURIComponent(k); }
-    return fetch(url).then(function(r){ if(!r.ok) throw new Error("http "+r.status); return r.json(); })
-      .catch(function(){ return jsonp(url); })
-      .then(function(j){ if(j && j.error){ throw new Error("api "+(j.error.code||"")); } return j; });
+    return limitGoogleBooks(function(){
+      return fetch(url).then(function(r){
+        if(!r.ok){
+          // A real HTTP-level error (429 rate limit, 403 quota, etc). Retrying the same
+          // endpoint via JSONP hits the same server-side limit and can't help -- and the
+          // JSONP fallback doesn't actually work against this API anyway (no true JSONP
+          // support), so it would just hang until its own 12s timeout. Fail fast instead
+          // so the cover-fallback chain can move on to the next source right away.
+          var err=new Error("http "+r.status); err.httpStatus=r.status; throw err;
+        }
+        return r.json();
+      }).catch(function(e){
+        if(e && e.httpStatus) throw e;
+        return jsonp(url); // network-level failure only (e.g. CORS/mixed-content/offline)
+      });
+    }).then(function(j){ if(j && j.error){ throw new Error("api "+(j.error.code||"")); } return j; });
   }
   function fetchGoogleByIsbn(isbn13){
     return gbFetch("https://www.googleapis.com/books/v1/volumes?q=isbn:"+encodeURIComponent(isbn13)+"&country=JP")
