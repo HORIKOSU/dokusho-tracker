@@ -213,6 +213,16 @@
   .shelf-btn .dot{width:10px;height:10px;border-radius:50%}
   .shelf-btn.cur{border-color:var(--accent);background:var(--accent-soft)}
 
+  .ddr{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+  .ddr-label{font-size:12.5px;font-weight:800;color:var(--muted)}
+  .ddr-val{flex:1;font-size:13.5px;font-weight:700;color:var(--ink)}
+  .ddr-edit{border:1.5px solid var(--line);background:#fff;color:var(--ink);font-family:inherit;font-weight:700;font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer}
+  .ddr-edit:active{transform:scale(.97)}
+  .ddr-editbox{display:none;align-items:center;gap:8px;margin-top:10px}
+  .ddr-editbox.on{display:flex}
+  .ddr-editbox input[type=date]{flex:1;min-width:0;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-family:inherit;font-size:13.5px;color:var(--ink);background:#fff}
+  .ddr-editbox .btn{display:inline-block;width:auto;padding:9px 14px;font-size:13px;margin:0;white-space:nowrap}
+
   .btn{
     display:block;width:100%;text-align:center;border:none;border-radius:12px;padding:14px;
     font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:10px;
@@ -964,6 +974,17 @@
     if(!b.history || !b.history.length){ b.history=[{status:b.status, at:b.updatedAt||b.addedAt||nowIso()}]; }
     return b.history;
   }
+  // The history entry that represents "when this book was finished" (used by monthly stats & gauge)
+  function lastDoneEntry(b){
+    var h=ensureHistory(b);
+    for(var i=h.length-1;i>=0;i--){ if(h[i].status==='done') return h[i]; }
+    return null;
+  }
+  function isoToDateInput(iso){
+    try{ var d=new Date(iso); if(isNaN(d.getTime())) return "";
+      return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    }catch(e){ return ""; }
+  }
 
   /* ---------- Import / Export (migration & backup) ---------- */
   function exportBooks(){
@@ -1295,6 +1316,17 @@
       h+='<button class="shelf-btn'+(s.key===b.status?" cur":"")+'" data-move="'+s.key+'"><span class="dot" style="background:'+s.color+'"></span>'+s.label+'</button>';
     });
     h+='</div>';
+    var doneEntry=lastDoneEntry(b);
+    if(doneEntry){
+      h+='<div class="ddr"><span class="ddr-label">📅 読んだ日</span>'
+        +'<span class="ddr-val" id="ddrVal">'+esc(fmtDate(doneEntry.at))+'</span>'
+        +'<button class="ddr-edit" id="ddrEditBtn">編集</button></div>'
+        +'<div class="ddr-editbox" id="ddrEditBox">'
+        +'<input type="date" id="ddrInput" value="'+isoToDateInput(doneEntry.at)+'">'
+        +'<button class="btn" id="ddrSaveBtn">保存</button>'
+        +'<button class="btn ghost" id="ddrCancelBtn">キャンセル</button>'
+        +'</div>';
+    }
     h+=historyHtml(b);
     h+='<button class="btn danger" id="delBtn">この本を削除</button>';
     h+='<button class="btn ghost" id="closeBtn">閉じる</button>';
@@ -1311,6 +1343,27 @@
         closeSheet();
       };
     });
+    var ddrEditBtn=document.getElementById("ddrEditBtn");
+    if(ddrEditBtn){
+      ddrEditBtn.onclick=function(){
+        document.getElementById("ddrEditBox").classList.add("on");
+        ddrEditBtn.style.display="none";
+      };
+      document.getElementById("ddrCancelBtn").onclick=function(){
+        document.getElementById("ddrEditBox").classList.remove("on");
+        ddrEditBtn.style.display="";
+      };
+      document.getElementById("ddrSaveBtn").onclick=function(){
+        var v=document.getElementById("ddrInput").value;
+        if(!v){ toast("日付を選択してください"); return; }
+        var iso=new Date(v+"T12:00:00").toISOString();
+        var de=lastDoneEntry(b);
+        if(de){ de.at=iso; } else { pushHistory(b,"done",iso); }
+        save(); render();
+        toast("読んだ日を更新しました");
+        closeSheet();
+      };
+    }
     document.getElementById("delBtn").onclick=function(){
       state.books=state.books.filter(function(x){return x.id!==b.id;}); save(); render(); closeSheet(); toast("削除しました");
     };
