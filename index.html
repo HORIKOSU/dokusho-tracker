@@ -1335,18 +1335,48 @@
       +yearGauges;
   }
 
+  // In-memory, per-page-load cache of cover-lookup outcomes (NOT persisted to localStorage).
+  // Without this, switching shelf tabs re-renders every visible book's <img>, and each fresh
+  // coverNode() call repeated the ENTIRE remote fallback chain from scratch for books that had
+  // already been tried (and already failed) earlier in the same session -- multiplying API
+  // calls by however many times the user switches tabs and burning through the daily quota
+  // very quickly. This cache makes each book's cover resolve at most once per page load;
+  // reloading the page clears it, so a book can always be retried later (e.g. once Google/
+  // openBD/Open Library eventually has it, or after the quota resets).
+  var coverSessionCache = {};
+  function coverCacheKey(b){
+    var isbn=(b.isbn||"").replace(/[^0-9Xx]/g,"");
+    return isbn || ("t:"+(b.title||"")+"|"+(b.author||""));
+  }
   function coverNode(b, cls){
     var isbn=(b.isbn||"").replace(/[^0-9Xx]/g,"");
     // Only bail out immediately when there's truly nothing to look up with (no static
     // cover, no ISBN, no title) -- a title is enough to attempt the title-fallback stage.
     if(!b.cover && !isbn && !b.title) return phCover(cls);
+    var cacheKey = coverCacheKey(b);
+    if(!b.cover && Object.prototype.hasOwnProperty.call(coverSessionCache, cacheKey)){
+      var cached = coverSessionCache[cacheKey];
+      if(cached){
+        // Already resolved earlier this session but not yet written back to this book
+        // (e.g. a duplicate ISBN/title) -- reuse it without touching the network again.
+        b.cover = cached;
+        try{ save(); }catch(e){}
+      } else {
+        // Already tried every source this session and found nothing -- don't hammer the
+        // APIs again just because the user switched tabs. Reload the page to retry.
+        return phCover(cls);
+      }
+    }
     var img=document.createElement("img");
     img.className="cover"+(cls?(" "+cls):"");
     img.alt=""; img.loading="lazy"; img.referrerPolicy="no-referrer";
     // Fallback chain: static cover -> Google(ISBN) -> openBD cover (JP) -> Google(title+author) -> Open Library -> placeholder
     // stage: 0=static cover, 1=google-by-isbn, 2=openBD, 3=google-by-title, 4=openlibrary, 5=placeholder
     var stage=-1, gTried=false, obTried=false, gtTried=false;
-    function toPlaceholder(){ var ph=phCover(cls); if(img.parentNode) img.parentNode.replaceChild(ph,img); }
+    function toPlaceholder(){
+      coverSessionCache[cacheKey] = "";
+      var ph=phCover(cls); if(img.parentNode) img.parentNode.replaceChild(ph,img);
+    }
     function next(){
       stage++;
       if(stage===0){
@@ -1375,6 +1405,7 @@
       // screens) use it directly instead of re-querying every API on every render.
       if(!b.cover && stage>0 && img.src && img.src.indexOf("data:")!==0){
         b.cover = img.src;
+        coverSessionCache[cacheKey] = img.src;
         try{ save(); }catch(e){}
       }
     };
@@ -1860,7 +1891,7 @@
     rd.readAsText(f);
   });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, doneYear:doneYear, computeYearlyTotals:computeYearlyTotals, buildYearGauges:buildYearGauges, nextMilestone:nextMilestone, lastDoneEntry:lastDoneEntry, render:render };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, doneYear:doneYear, computeYearlyTotals:computeYearlyTotals, buildYearGauges:buildYearGauges, nextMilestone:nextMilestone, lastDoneEntry:lastDoneEntry, render:render, coverSessionCache:coverSessionCache, coverCacheKey:coverCacheKey };
 
   render();
 })();
