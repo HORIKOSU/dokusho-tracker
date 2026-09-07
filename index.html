@@ -26,9 +26,7 @@
     line-height:1.5;
   }
   header.app{
-    position:sticky; top:0; z-index:20; background:rgba(247,242,234,.92);
-    backdrop-filter:saturate(1.2) blur(8px);
-    border-bottom:1px solid var(--line);
+    background:var(--bg);
     padding:calc(12px + env(safe-area-inset-top)) 16px 0;
   }
   .brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -120,7 +118,13 @@
   .sk-prev-m b{color:var(--accent-dk)}
   .sk-prev-note{display:inline-block;margin-left:4px;font-size:11px;color:var(--muted)}
 
-  .tabs{display:flex;gap:6px;padding:2px 0}
+  .tabs{
+    display:flex;gap:6px;
+    position:sticky; top:0; z-index:20;
+    margin:0 -16px; padding:8px 16px; background:rgba(247,242,234,.92);
+    backdrop-filter:saturate(1.2) blur(8px);
+    border-bottom:1px solid var(--line);
+  }
   .tab{
     flex:1 1 0; min-width:0; border:none;cursor:pointer;font-family:inherit;
     padding:9px 4px; border-radius:13px; background:var(--accent-soft); color:var(--accent-dk);
@@ -157,7 +161,16 @@
   .card{
     display:flex;flex-direction:column;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
     padding:8px;box-shadow:var(--shadow);position:relative;overflow:hidden;cursor:pointer;
+    touch-action:manipulation;
   }
+  .card.dragging{
+    opacity:.92; box-shadow:0 14px 30px rgba(0,0,0,.28); transform-origin:center; z-index:999;
+    pointer-events:none; transition:none !important;
+  }
+  .card-placeholder{border-radius:var(--radius);background:var(--accent-soft);opacity:.5;
+    border:2px dashed var(--accent);box-sizing:border-box}
+  body.reorder-active{ -webkit-user-select:none; user-select:none; }
+  body.reorder-active .grid{ touch-action:none; }
   .cover{
     flex:none;width:100%;height:auto;aspect-ratio:2/3;border-radius:8px;object-fit:cover;background:var(--accent-soft);
     box-shadow:0 2px 6px rgba(0,0,0,.12);
@@ -993,6 +1006,22 @@
       return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
     }catch(e){ return ""; }
   }
+  // Sort key for a book within its shelf. A manually-set b.order (from long-press drag
+  // reordering) always wins; otherwise falls back to the shelf's natural date-based order
+  // (read date for 読んだ本, registration/update date for everything else), same as before
+  // drag-reordering existed. Larger value = shown first (nearer the top).
+  function sortKeyFor(b, tab){
+    if(typeof b.order==="number" && isFinite(b.order)) return b.order;
+    var iso;
+    if(tab==="done"){
+      var de=lastDoneEntry(b);
+      iso = de ? de.at : (b.updatedAt||b.addedAt||"");
+    } else {
+      iso = b.updatedAt||b.addedAt||"";
+    }
+    var t = iso ? new Date(iso).getTime() : NaN;
+    return isFinite(t) ? t : 0;
+  }
 
   /* ---------- Import / Export (migration & backup) ---------- */
   function exportBooks(){
@@ -1238,17 +1267,7 @@
     if(q){ items = items.filter(function(b){
       return ((b.title||"")+" "+(b.author||"")+" "+(b.publisher||"")).toLowerCase().indexOf(q)>=0;
     }); }
-    if(state.tab==="done"){
-      // 読んだ本は「読んだ日」が新しい順（登録・取り込み日ではなく、実際に読み終えた日基準）
-      items.sort(function(a,b){
-        var da=lastDoneEntry(a), db=lastDoneEntry(b);
-        var ka = da ? da.at : (a.updatedAt||a.addedAt||"");
-        var kb = db ? db.at : (b.updatedAt||b.addedAt||"");
-        return (kb||"").localeCompare(ka||"");
-      });
-    } else {
-      items.sort(function(a,b){ return (b.updatedAt||b.addedAt||"").localeCompare(a.updatedAt||a.addedAt||""); });
-    }
+    items.sort(function(a,b){ return sortKeyFor(b,state.tab)-sortKeyFor(a,state.tab); });
 
     listEl.innerHTML="";
     if(!items.length){
@@ -1417,6 +1436,7 @@
   function cardEl(b){
     var st=statusOf(b.status);
     var card=document.createElement("div"); card.className="card";
+    card.dataset.bookId=b.id;
     var badge=document.createElement("div"); badge.className="badge"; badge.style.background=st.color; card.appendChild(badge);
     card.appendChild(coverNode(b));
     var info=document.createElement("div"); info.className="info";
@@ -1429,8 +1449,102 @@
     var mb=document.createElement("button"); mb.className="menu-btn"; mb.innerHTML="⋯"; mb.setAttribute("aria-label","操作");
     mb.onclick=function(ev){ ev.stopPropagation(); openBookMenu(b); };
     act.appendChild(mb); card.appendChild(act);
-    card.onclick=function(){ openBookMenu(b); };
+    card.onclick=function(){ if(card._suppressClick) return; openBookMenu(b); };
+    attachDragReorder(card);
     return card;
+  }
+
+  /* ---------- Long-press drag to reorder within the current shelf ---------- */
+  var DRAG_HOLD_MS=450, DRAG_MOVE_CANCEL_PX=9;
+  function attachDragReorder(card){
+    var pressTimer=null, startX=0, startY=0, offX=0, offY=0, dragging=false, pointerId=null, placeholder=null;
+
+    function cleanup(){
+      if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; }
+      if(dragging){
+        dragging=false;
+        card.classList.remove("dragging");
+        card.style.position=""; card.style.left=""; card.style.top=""; card.style.width="";
+        card.style.zIndex=""; card.style.transform="";
+        if(placeholder && placeholder.parentNode){ placeholder.parentNode.removeChild(placeholder); }
+        document.body.classList.remove("reorder-active");
+      }
+      placeholder=null;
+      if(pointerId!=null){ try{ card.releasePointerCapture(pointerId); }catch(e){} pointerId=null; }
+    }
+
+    function startDrag(){
+      dragging=true;
+      var rect=card.getBoundingClientRect();
+      offX=rect.left; offY=rect.top;
+      placeholder=document.createElement("div");
+      placeholder.className="card-placeholder";
+      placeholder.style.width=rect.width+"px";
+      placeholder.style.height=rect.height+"px";
+      card.parentNode.insertBefore(placeholder, card.nextSibling);
+      card.style.position="fixed";
+      card.style.left=rect.left+"px"; card.style.top=rect.top+"px"; card.style.width=rect.width+"px";
+      card.style.zIndex="999";
+      card.classList.add("dragging");
+      document.body.classList.add("reorder-active");
+      if(navigator.vibrate){ try{ navigator.vibrate(12); }catch(e){} }
+    }
+
+    function moveDrag(ev){
+      var nx=offX+(ev.clientX-startX), ny=offY+(ev.clientY-startY);
+      card.style.left=nx+"px"; card.style.top=ny+"px";
+      var wasDisplay=card.style.display;
+      card.style.display="none";
+      var el=document.elementFromPoint(ev.clientX, ev.clientY);
+      card.style.display=wasDisplay;
+      var overCard = el ? el.closest(".card") : null;
+      if(overCard && overCard!==card && overCard.parentNode===placeholder.parentNode){
+        var r=overCard.getBoundingClientRect();
+        var insertBefore = ev.clientY < r.top+r.height/2;
+        if(insertBefore){ overCard.parentNode.insertBefore(placeholder, overCard); }
+        else { overCard.parentNode.insertBefore(placeholder, overCard.nextSibling); }
+      }
+    }
+
+    function endDrag(){
+      placeholder.parentNode.insertBefore(card, placeholder);
+      persistOrderFromDom();
+      cleanup();
+    }
+
+    function persistOrderFromDom(){
+      var cardEls=Array.prototype.slice.call(listEl.querySelectorAll(".card"));
+      var baseMs=Date.now();
+      cardEls.forEach(function(el,i){
+        var book=state.books.find(function(x){ return x.id===el.dataset.bookId; });
+        if(book){ book.order = baseMs - i*60000; }
+      });
+      try{ save(); }catch(e){}
+    }
+
+    card.addEventListener("pointerdown", function(ev){
+      if(ev.button!=null && ev.button!==0) return;
+      startX=ev.clientX; startY=ev.clientY; pointerId=ev.pointerId;
+      pressTimer=setTimeout(function(){
+        pressTimer=null;
+        try{ card.setPointerCapture(pointerId); }catch(e){}
+        startDrag();
+      }, DRAG_HOLD_MS);
+    });
+    card.addEventListener("pointermove", function(ev){
+      if(!dragging && pressTimer){
+        var dx=ev.clientX-startX, dy=ev.clientY-startY;
+        if(Math.sqrt(dx*dx+dy*dy) > DRAG_MOVE_CANCEL_PX){ clearTimeout(pressTimer); pressTimer=null; }
+        return;
+      }
+      if(dragging){ ev.preventDefault(); moveDrag(ev); }
+    });
+    card.addEventListener("pointerup", function(){
+      var wasDragging=dragging;
+      if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; }
+      if(wasDragging){ endDrag(); card._suppressClick=true; setTimeout(function(){ card._suppressClick=false; },80); }
+    });
+    card.addEventListener("pointercancel", cleanup);
   }
 
   function fmtDate(iso){
@@ -1891,7 +2005,7 @@
     rd.readAsText(f);
   });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, doneYear:doneYear, computeYearlyTotals:computeYearlyTotals, buildYearGauges:buildYearGauges, nextMilestone:nextMilestone, lastDoneEntry:lastDoneEntry, render:render, coverSessionCache:coverSessionCache, coverCacheKey:coverCacheKey };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, doneYear:doneYear, computeYearlyTotals:computeYearlyTotals, buildYearGauges:buildYearGauges, nextMilestone:nextMilestone, lastDoneEntry:lastDoneEntry, render:render, coverSessionCache:coverSessionCache, coverCacheKey:coverCacheKey, sortKeyFor:sortKeyFor };
 
   render();
 })();
