@@ -1007,6 +1007,9 @@
   function normImportStatus(s){ return (['want','stack','reading','done'].indexOf(s)>=0)?s:'want'; }
   function normalizeImported(b){
     var addedAt = b.addedAt ? (typeof b.addedAt==='number'? new Date(b.addedAt).toISOString() : b.addedAt) : nowIso();
+    // Allow an explicit updatedAt in the import data (used to control shelf sort order for
+    // batches with no real per-item timestamp); default to now, same as before, when absent.
+    var updatedAt = b.updatedAt ? (typeof b.updatedAt==='number'? new Date(b.updatedAt).toISOString() : b.updatedAt) : nowIso();
     var status = normImportStatus(b.status);
     var finishedAt = b.finishedAt ? (typeof b.finishedAt==='number'? new Date(b.finishedAt).toISOString() : b.finishedAt) : null;
     var histAt = (status==='done' && finishedAt) ? finishedAt : addedAt;
@@ -1019,7 +1022,7 @@
       pubdate: b.pubdate || b.publishedDate || '',
       cover: b.cover || '',
       status: status,
-      addedAt: addedAt, updatedAt: nowIso(),
+      addedAt: addedAt, updatedAt: updatedAt,
       source: b.source || 'import',
       memo: b.memo || '', rating: b.rating || 0,
       history: [{status: status, at: histAt}]
@@ -1133,6 +1136,16 @@
         if(!j || !j.items || !j.items[0]) return null;
         var m=volToMeta(j.items[0].volumeInfo||{}); m.isbn=m.isbn||isbn13; return m;
       }).catch(function(){ return null; });
+  }
+  // Some JP titles aren't indexed under their ISBN in Google Books (or the record has no cover)
+  // even though a plain title+author search turns one up. Used as a cover-only fallback.
+  function fetchGoogleByTitle(title, author){
+    if(!title) return Promise.resolve(null);
+    var q = title + (author ? (" "+author) : "");
+    return searchBooks(q).then(function(list){
+      for(var i=0;i<list.length;i++){ if(list[i] && list[i].cover) return list[i]; }
+      return null;
+    }).catch(function(){ return null; });
   }
   // ISBN -> candidate list (openBD + Google), for "候補を出す" flow
   function getIsbnCandidates(isbn13){
@@ -1291,13 +1304,15 @@
 
   function coverNode(b, cls){
     var isbn=(b.isbn||"").replace(/[^0-9Xx]/g,"");
-    if(!b.cover && !isbn) return phCover(cls);
+    // Only bail out immediately when there's truly nothing to look up with (no static
+    // cover, no ISBN, no title) -- a title is enough to attempt the title-fallback stage.
+    if(!b.cover && !isbn && !b.title) return phCover(cls);
     var img=document.createElement("img");
     img.className="cover"+(cls?(" "+cls):"");
     img.alt=""; img.loading="lazy"; img.referrerPolicy="no-referrer";
-    // Fallback chain: static cover -> Google(ISBN) -> openBD cover (JP) -> Open Library -> placeholder
-    // stage: 0=static cover, 1=google-by-isbn, 2=openBD, 3=openlibrary, 4=placeholder
-    var stage=-1, gTried=false, obTried=false;
+    // Fallback chain: static cover -> Google(ISBN) -> openBD cover (JP) -> Google(title+author) -> Open Library -> placeholder
+    // stage: 0=static cover, 1=google-by-isbn, 2=openBD, 3=google-by-title, 4=openlibrary, 5=placeholder
+    var stage=-1, gTried=false, obTried=false, gtTried=false;
     function toPlaceholder(){ var ph=phCover(cls); if(img.parentNode) img.parentNode.replaceChild(ph,img); }
     function next(){
       stage++;
@@ -1312,12 +1327,24 @@
           fetchOpenBD(isbn).then(function(o){ if(o && o.cover){ img.src=o.cover; } else { next(); } }).catch(function(){ next(); });
         } else { next(); }
       } else if(stage===3){
+        if(b.title && !gtTried){ gtTried=true;
+          fetchGoogleByTitle(b.title, b.author).then(function(o){ if(o && o.cover){ img.src=o.cover; } else { next(); } }).catch(function(){ next(); });
+        } else { next(); }
+      } else if(stage===4){
         if(isbn){ img.src="https://covers.openlibrary.org/b/isbn/"+isbn+"-M.jpg?default=false"; } else { next(); }
       } else {
         toPlaceholder();
       }
     }
     img.onerror=next;
+    img.onload=function(){
+      // A remote fallback stage resolved a cover: persist it so future renders (and other
+      // screens) use it directly instead of re-querying every API on every render.
+      if(!b.cover && stage>0 && img.src && img.src.indexOf("data:")!==0){
+        b.cover = img.src;
+        try{ save(); }catch(e){}
+      }
+    };
     next();
     return img;
   }
