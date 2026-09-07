@@ -17,7 +17,7 @@
     --radius:16px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;padding:0;overflow-x:hidden;width:100%;max-width:100%}
+  html,body{margin:0;padding:0;overflow-x:clip;width:100%;max-width:100%}
   body.sheet-open{overflow:hidden}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
@@ -121,7 +121,7 @@
   .tabs{
     display:flex;gap:6px;
     position:sticky; top:0; z-index:20;
-    margin:0 -16px; padding:8px 16px; background:rgba(247,242,234,.92);
+    padding:8px 16px; background:rgba(247,242,234,.92);
     backdrop-filter:saturate(1.2) blur(8px);
     border-bottom:1px solid var(--line);
   }
@@ -344,13 +344,13 @@
     <span class="total" id="totalCount"></span>
     <button class="skillbtn" id="skillBtn">📊 スキル</button>
   </div>
-  <div class="tabs" id="tabs" role="tablist">
-    <button class="tab" role="tab" data-status="want"    aria-selected="true"><span class="lbl">読みたい本</span><span class="cnt" id="cnt-want">0</span></button>
-    <button class="tab" role="tab" data-status="stack"   aria-selected="false"><span class="lbl">積読本</span><span class="cnt" id="cnt-stack">0</span></button>
-    <button class="tab" role="tab" data-status="reading" aria-selected="false"><span class="lbl">読んでる本</span><span class="cnt" id="cnt-reading">0</span></button>
-    <button class="tab" role="tab" data-status="done"    aria-selected="false"><span class="lbl">読んだ本</span><span class="cnt" id="cnt-done">0</span></button>
-  </div>
 </header>
+<div class="tabs" id="tabs" role="tablist">
+  <button class="tab" role="tab" data-status="want"    aria-selected="true"><span class="lbl">読みたい本</span><span class="cnt" id="cnt-want">0</span></button>
+  <button class="tab" role="tab" data-status="stack"   aria-selected="false"><span class="lbl">積読本</span><span class="cnt" id="cnt-stack">0</span></button>
+  <button class="tab" role="tab" data-status="reading" aria-selected="false"><span class="lbl">読んでる本</span><span class="cnt" id="cnt-reading">0</span></button>
+  <button class="tab" role="tab" data-status="done"    aria-selected="false"><span class="lbl">読んだ本</span><span class="cnt" id="cnt-done">0</span></button>
+</div>
 
 <main>
   <div class="hero-stat" id="heroStat"></div>
