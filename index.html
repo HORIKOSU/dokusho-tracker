@@ -1033,6 +1033,11 @@
       setTimeout(function(){ try{document.body.removeChild(a); URL.revokeObjectURL(url);}catch(e){} },120);
     }catch(e){ toast('書き出しに失敗しました'); }
   }
+  function topSortKeyForStatus(status){
+    var mx = 0;
+    state.books.forEach(function(x){ if(x.status===status){ var k=sortKeyFor(x,status); if(k>mx) mx=k; } });
+    return mx;
+  }
   function normImportStatus(s){ return (['want','stack','reading','done'].indexOf(s)>=0)?s:'want'; }
   function normalizeImported(b){
     var addedAt = b.addedAt ? (typeof b.addedAt==='number'? new Date(b.addedAt).toISOString() : b.addedAt) : nowIso();
@@ -1062,12 +1067,24 @@
     var added=0, skipped=0, haveIsbn={}, haveTitle={};
     function tkey(x){ return (x.title||'').trim()+'|'+((x.author||x.authors||'')).trim(); }
     state.books.forEach(function(x){ if(x.isbn) haveIsbn[x.isbn]=1; haveTitle[tkey(x)]=1; });
+    // If a shelf already has manually drag-ordered books (b.order pinned to a past
+    // moment), a freshly imported batch's own (often backdated) timestamps can end
+    // up sorting BELOW those pinned books. Guarantee newly imported books always
+    // land above whatever is already on their shelf, while preserving the batch's
+    // own internal relative order (first item in the array ends up on top).
+    var topByStatus = {}, addIdx = {};
     arr.forEach(function(raw){
       if(!raw || (!raw.title && !raw.isbn)) return;
       var nb=normalizeImported(raw);
       var dupe=(nb.isbn && haveIsbn[nb.isbn]) || haveTitle[tkey(nb)];
       if(dupe){ skipped++; return; }
       if(nb.isbn) haveIsbn[nb.isbn]=1; haveTitle[tkey(nb)]=1;
+      if(!(nb.status in topByStatus)) topByStatus[nb.status] = topSortKeyForStatus(nb.status);
+      var ownKey = nb.updatedAt ? new Date(nb.updatedAt).getTime() : 0;
+      if(!isFinite(ownKey) || ownKey <= topByStatus[nb.status]){
+        addIdx[nb.status] = (addIdx[nb.status]||0) + 1;
+        nb.order = topByStatus[nb.status] + 1 - addIdx[nb.status];
+      }
       state.books.push(nb); added++;
     });
     if(added) save();
@@ -1669,7 +1686,10 @@
         if(mt && mt.value.trim() && !meta.title) meta.title=mt.value.trim();
         if(existing){
           if(existing.status!==to) pushHistory(existing,to);
+          var moveTopKey = topSortKeyForStatus(to);
           existing.status=to; existing.updatedAt=nowIso();
+          var moveOwnKey = new Date(existing.updatedAt).getTime();
+          existing.order = (isFinite(moveTopKey) && moveOwnKey<=moveTopKey) ? moveTopKey+1 : null;
           if(!existing.title && meta.title) existing.title=meta.title;
           if(!existing.cover && meta.cover) existing.cover=meta.cover;
           if(meta.catz && !existing.catz) existing.catz=meta.catz;
@@ -1682,10 +1702,12 @@
           save(); toast("「"+statusOf(to).label+"」に移動しました");
         }else{
           var addedNow=nowIso();
+          var addTopKey = topSortKeyForStatus(to);
           var bk={
             id:uid(), isbn:meta.isbn||"", title:meta.title||"", author:meta.author||"",
             publisher:meta.publisher||"", pubdate:meta.pubdate||"", cover:meta.cover||"",
             status:to, addedAt:addedNow, updatedAt:addedNow, source:meta.source||"",
+            order: (isFinite(addTopKey) && new Date(addedNow).getTime()<=addTopKey) ? addTopKey+1 : null,
             history:[{status:to, at:addedNow}]
           };
           if(meta.catz) bk.catz=meta.catz;
