@@ -1218,19 +1218,23 @@
     var img=document.createElement("img");
     img.className="cover"+(cls?(" "+cls):"");
     img.alt=""; img.loading="lazy"; img.referrerPolicy="no-referrer";
-    // Fallback chain: Google cover -> openBD cover (JP) -> Open Library -> placeholder
-    // stage: 0=google, 1=openBD, 2=openlibrary, 3=placeholder
-    var stage=-1, obTried=false;
+    // Fallback chain: static cover -> Google(ISBN) -> openBD cover (JP) -> Open Library -> placeholder
+    // stage: 0=static cover, 1=google-by-isbn, 2=openBD, 3=openlibrary, 4=placeholder
+    var stage=-1, gTried=false, obTried=false;
     function toPlaceholder(){ var ph=phCover(cls); if(img.parentNode) img.parentNode.replaceChild(ph,img); }
     function next(){
       stage++;
       if(stage===0){
         if(b.cover){ img.src=b.cover; } else { next(); }
       } else if(stage===1){
+        if(isbn && !gTried){ gTried=true;
+          fetchGoogleByIsbn(isbn).then(function(o){ if(o && o.cover){ img.src=o.cover; } else { next(); } }).catch(function(){ next(); });
+        } else { next(); }
+      } else if(stage===2){
         if(isbn && !obTried){ obTried=true;
           fetchOpenBD(isbn).then(function(o){ if(o && o.cover){ img.src=o.cover; } else { next(); } }).catch(function(){ next(); });
         } else { next(); }
-      } else if(stage===2){
+      } else if(stage===3){
         if(isbn){ img.src="https://covers.openlibrary.org/b/isbn/"+isbn+"-M.jpg?default=false"; } else { next(); }
       } else {
         toPlaceholder();
