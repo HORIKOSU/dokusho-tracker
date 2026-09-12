@@ -202,9 +202,9 @@
     display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
   .info .isbn{display:none}
   .priority-row{display:flex;gap:3px;margin:6px -4px -4px}
-  .priority-star{display:flex;align-items:center;justify-content:center;flex:1;min-width:0;height:30px;font-size:19px;
-    line-height:1;color:#ddd0ce;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-  .priority-star.filled{color:#c99a4b}
+  .priority-star{display:flex;align-items:center;justify-content:center;flex:1;min-width:0;height:30px;font-size:15px;
+    line-height:1;color:#e6dcda;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+  .priority-star.filled{color:#c2a26c}
   .priority-star:active{transform:scale(1.2)}
   .card .actions{position:absolute;top:6px;right:6px}
   .menu-btn{border:none;background:rgba(255,255,255,.88);font-size:16px;color:var(--muted);cursor:pointer;
@@ -315,7 +315,8 @@
     background:var(--accent-soft);border-radius:12px}
   .dp-label{font-size:12.5px;font-weight:800;color:var(--accent-dk);flex:0 0 auto}
   .detail-priority{display:flex;gap:6px;flex:0 0 auto}
-  .detail-priority .priority-star{flex:0 0 auto;width:34px;height:34px;font-size:24px}
+  .detail-priority .priority-star{flex:0 0 auto;width:34px;height:34px;font-size:24px;color:#d3a49b}
+  .detail-priority .priority-star.filled{color:#b8863f}
 
   /* "already registered" badges (search/scan candidate lists + confirm sheet) */
   .res.owned{border-color:#e7bd83;background:#fff8ec}
@@ -363,6 +364,19 @@
     background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-size:13.5px;font-weight:600;
     box-shadow:0 8px 24px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;max-width:88%;text-align:center}
   .toast.on{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+  /* resort confirm bar: shown after a priority-star tap on the shelf so the card list
+     doesn't instantly re-sort out from under the user's finger */
+  .resort-bar{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));z-index:40;
+    display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;
+    padding:10px 10px 10px 16px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.3);
+    font-size:13px;font-weight:700;max-width:92%;white-space:nowrap;
+    opacity:0;pointer-events:none;transform:translateX(-50%) translateY(8px);transition:opacity .2s, transform .2s}
+  .resort-bar.on{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+  .resort-bar button{background:var(--accent);color:#fff;border:none;border-radius:999px;
+    padding:8px 15px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;white-space:nowrap;
+    -webkit-tap-highlight-color:transparent}
+  .resort-bar button:active{background:var(--accent-dk)}
 </style>
 </head>
 <body>
@@ -406,6 +420,11 @@
   <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>
   本を追加
 </button>
+
+<div class="resort-bar" id="resortBar">
+  <span>★ 優先度を変更</span>
+  <button type="button" id="resortConfirmBtn">反映する</button>
+</div>
 
 <!-- Scanner -->
 <div class="scanner" id="scanner">
@@ -1357,7 +1376,25 @@
 
   /* ---------- Rendering ---------- */
   var listEl=document.getElementById("list");
+  /* ---------- resort-confirm cushion (priority stars on the shelf) ---------- */
+  var resortBarEl = document.getElementById("resortBar");
+  var resortConfirmBtnEl = document.getElementById("resortConfirmBtn");
+  if(resortConfirmBtnEl){ resortConfirmBtnEl.onclick=function(){ render(); }; }
+  function showResortBar(){ if(resortBarEl) resortBarEl.classList.add("on"); }
+  function hideResortBar(){ if(resortBarEl) resortBarEl.classList.remove("on"); }
+  function updateCardPriorityUI(card, b){
+    var prow = card.querySelector(".priority-row");
+    if(!prow) return;
+    var pv = b.priority||0;
+    Array.prototype.forEach.call(prow.querySelectorAll(".priority-star"), function(se, idx){
+      var n = idx+1;
+      se.classList.toggle("filled", n<=pv);
+      se.textContent = n<=pv ? "★" : "☆";
+    });
+  }
+
   function render(){
+    hideResortBar();
     var counts={want:0,stack:0,reading:0,done:0};
     state.books.forEach(function(b){ if(counts[b.status]!=null) counts[b.status]++; });
     STATUSES.forEach(function(s){ document.getElementById("cnt-"+s.key).textContent = counts[s.key]; });
@@ -1577,7 +1614,9 @@
           sEl.onclick=function(ev){
             ev.stopPropagation();
             b.priority = (b.priority||0)===n ? 0 : n;
-            save(); render();
+            save();
+            updateCardPriorityUI(card, b);
+            showResortBar();
           };
           prow.appendChild(sEl);
         })(pi);
@@ -2133,11 +2172,6 @@
   function openSheet(html){ sheet.innerHTML=html; overlay.classList.add("on"); try{sheet.scrollTop=0;}catch(e){} document.body.classList.add("sheet-open"); }
   function closeSheet(){ overlay.classList.remove("on"); sheet.innerHTML=""; document.body.classList.remove("sheet-open"); }
   overlay.addEventListener("click",function(e){ if(e.target===overlay) closeSheet(); });
-  // Belt-and-suspenders for touch: a plain "click" listener can occasionally miss on real
-  // touchscreens (e.g. if the browser treats the tap as ambiguous with a scroll/gesture and
-  // never synthesizes a click). pointerdown fires immediately and unconditionally on tap,
-  // so backdrop-tap-to-close is reliable on phones too.
-  overlay.addEventListener("pointerdown",function(e){ if(e.target===overlay) closeSheet(); });
 
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
 
