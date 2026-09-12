@@ -4,23 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#8c5a3b">
+<meta name="theme-color" content="#561416">
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADT0lEQVR4nO2by08TURTGvzvtQMsr4RFEifKM4SEBTUQjJGyMLkhUSIhLVy40Jqz8C1y60o1x7wYTjTFs3EkMsPCBhYCItFZBKNbhIX3RdjquSmqZmXZ0Lnc6M7/d9J7OOd83Z27vdGYINHDhdJukJZ4VUzOLJN/YnIGFIlqJXGZwaoOFLh7IrUHWHTMIl0OuGw50gFnFA/LauFwBZiNbo+ocYAX2DbDC0U+TqZXL/sAqpDXbpwDrAlhDrNj+mVi+A2wDWBfAGtsA1gWwxvIGOGns9PbVTlw8U59XbCKZwl5CRDiWRGAzgtVgGB6vAI9PQCKZolHeX1AxQAu8kwPv5FDm5nGk0o3ulmoMnj+BUDSBZ2++Ynz6G8QUvaWKYU+BMjePG5dO4u71bjgd9Mo0rAFpettqMdTfSG3/hjcAAIb6m8A76ZR66HPAg+dzmPCs72+7ihyorynFyEAzettqZb/jKnKgo6ESHq+gez3MOyAWF+Fd+437Yx74A7uKcXVVJVTyMzcgjZiSMLOsfITLXHSa1TAGAABRuYWxFYpTyWkYAziOoLulWnF85WeISl7mC6Fi3oFjNSUYGWhGU125bIw/sIsvP3ao5D90A0aHuzA63JV3fDyRwuPxT9TqYd4BaqwLETx6uYDPK9vUchhmDshGkoBZn4DgTpRqHsMaQAhw+exxPLzTl/eV5b9gWAPS8E4Ot6504ly7/Crxf2G+FCYEKHXxaD5agWt9jehpPfhTSAhwc7Ad75aCEEV9L42Zd4AkAaFoArM+AfeefMC8f0s2rqq8GD0tNbrnZ25AJpIkYXI+oDjeWl+he05DGQCoP7RU7uZ1z2coAwgh6DtVpzgejiV1z8l8IZQ5CQ71N6KjoVIxdk2I6J7f8EvhNKIo4f1SUPd6DHUKqPFi0o9QNKH7fgvCgOmFDYy99lLZN/M5QI3t0B6eTvjw6u0qJInOvQFDGCCKEqLxJMKxJNY3I/i+EcLH5V+Y82/qvvLLxn5ChHUBrLENYF0Aa2wDWBfAGtsA1gWwhtPygpHZmJpZJHYHsC6ANRyg7T07s5DWzGV/YAUytdqnQOaGFbogW+OBDjCzCXLaVMWa5b8CtYOqOgeYoRtyadAksFA6QsuB+wPW2wUpuScjpQAAAABJRU5ErkJggg==">
 <link rel="apple-touch-icon" href="data:image/png;base64,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">
 <title>Booskill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f7f2ea; --panel:#fffdf9; --line:#e6ddcf; --ink:#3a3128; --muted:#8a7d6c;
-    --accent:#a4623a; --accent-dk:#8c5030; --accent-soft:#f0e2d5;
-    --want:#4f8a8b; --stack:#c08a3e; --reading:#3f7fbf; --done:#5f9a5f;
-    --shadow:0 4px 18px rgba(80,55,30,.10);
+    --bg:#f7f1ec; --panel:#fffbf8; --line:#e8dcd8; --ink:#2c1416; --muted:#8a7472;
+    --accent:#7a2530; --accent-dk:#561416; --accent-soft:#f0dcda;
+    --want:#4f7a8a; --stack:#c99a4b; --reading:#a9754a; --done:#7a5f7a;
+    --shadow:0 4px 18px rgba(86,20,22,.10);
     --radius:16px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;overflow-x:clip;width:100%;max-width:100%}
   body.sheet-open{overflow:hidden}
   body{
-    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
+    font-family:'M PLUS Rounded 1c',-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
     background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased;
     padding-bottom:calc(96px + env(safe-area-inset-bottom));
     line-height:1.5;
@@ -37,7 +40,7 @@
 
   /* Hero stat card: total books read, front and center */
   .hero-stat{position:relative;overflow:hidden;margin:2px 0 16px;padding:20px 18px;border-radius:20px;text-align:center;color:#fff;
-    background:linear-gradient(135deg,#c0824f,#8c5030);box-shadow:0 8px 22px rgba(140,80,48,.30)}
+    background:linear-gradient(135deg,#8a3540,#561416);box-shadow:0 8px 22px rgba(86,20,22,.30)}
   .hero-stat::before{content:"";position:absolute;inset:0;pointer-events:none;
     background-image:radial-gradient(circle at 14% 22%, rgba(255,255,255,.20) 0 3px, transparent 4px),
                       radial-gradient(circle at 88% 18%, rgba(255,255,255,.16) 0 2.5px, transparent 3.5px),
@@ -83,6 +86,8 @@
   .skbar[data-genre]{cursor:pointer;padding:4px;margin:-4px;border-radius:10px;transition:background .15s}
   .skbar[data-genre]:active{background:var(--accent-soft)}
   .skill-title{font-size:17px;margin:2px 0 12px;font-weight:800}
+  .sk-refresh-badge{display:inline-flex;vertical-align:middle;margin-left:6px}
+  .sk-refresh-badge .spinner{width:13px;height:13px}
   .sk-note{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6;text-align:center}
   .cov-wrap{margin-top:20px;border-top:1px solid var(--accent-soft);padding-top:16px}
   .cov-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:8px}
@@ -93,14 +98,14 @@
   .cov-dom{margin-bottom:13px}
   .cov-dom-h{font-size:11.5px;font-weight:800;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
   .cov-cells{display:flex;flex-wrap:wrap;gap:6px}
-  .cov-cell{position:relative;overflow:hidden;font-size:11px;padding:6px 9px;border-radius:8px;border:1px solid #e6dccf;color:#7a5b33;background:#fbf7f1;line-height:1.2;display:inline-flex;align-items:center;min-height:15px}
-  .cov-cell .cc-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:#f0dcb8;z-index:0;transition:width .5s cubic-bezier(.22,.61,.36,1)}
+  .cov-cell{position:relative;overflow:hidden;font-size:11px;padding:6px 9px;border-radius:8px;border:1px solid var(--line);color:#4a2224;background:#f8f1ef;line-height:1.2;display:inline-flex;align-items:center;min-height:15px}
+  .cov-cell .cc-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:#f0dcda;z-index:0;transition:width .5s cubic-bezier(.22,.61,.36,1)}
   .cov-cell .cc-tx{position:relative;z-index:1}
   .cov-cell .cc-tx b{font-weight:800;margin-left:4px}
-  .cov-cell.l0{border-style:dashed;color:#9a8c7a;opacity:.8}
-  .cov-cell.l1 .cc-fill{background:#f0dcb8}
-  .cov-cell.l2 .cc-fill{background:#e3b877}
-  .cov-cell.l3 .cc-fill{background:#d29e57}
+  .cov-cell.l0{border-style:dashed;color:#9a8482;opacity:.8}
+  .cov-cell.l1 .cc-fill{background:#f0dcda}
+  .cov-cell.l2 .cc-fill{background:#d9a3a0}
+  .cov-cell.l3 .cc-fill{background:#8a3a3a}
   .cov-cell[data-biz]{cursor:pointer}
   .cov-cell[data-biz]:active{filter:brightness(.94)}
   .cov-legend{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px}
@@ -136,9 +141,9 @@
   .tab .lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   .tab .cnt{
     display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:18px;padding:0 6px;
-    border-radius:999px;background:rgba(120,90,60,.14);color:inherit;font-size:11px;font-weight:800;
+    border-radius:999px;background:rgba(86,20,22,.14);color:inherit;font-size:11px;font-weight:800;
   }
-  .tab[aria-selected="true"]{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(150,110,70,.28)}
+  .tab[aria-selected="true"]{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(86,20,22,.28)}
   .tab[aria-selected="true"] .cnt{background:rgba(255,255,255,.3);color:#fff}
 
   main{max-width:720px;margin:0 auto;padding:14px 14px 0;overflow-x:hidden}
@@ -166,8 +171,8 @@
   .sort-btn:active{transform:scale(.98)}
 
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .data-footer{text-align:center;font-size:12px;color:#9a8c7a;margin:22px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
-  .data-footer a{color:#9a8c7a;text-decoration:underline}
+  .data-footer{text-align:center;font-size:12px;color:var(--muted);margin:22px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+  .data-footer a{color:var(--muted);text-decoration:underline}
   #monthlyBox .cov-wrap.mo-top{margin-top:0;padding-top:0;border-top:none;margin-bottom:14px}
   .grid.slide-r,.grid.slide-l{animation:shelfIn .18s ease}
   @keyframes shelfIn{from{opacity:.35}to{opacity:1}}
@@ -196,11 +201,11 @@
   .info .meta{font-size:10.5px;color:var(--muted);line-height:1.4;min-height:14.7px;
     display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
   .info .isbn{display:none}
-  .priority-row{display:flex;gap:1px;margin-top:4px}
-  .priority-star{display:flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:14px;
-    line-height:1;color:#d9cdbb;cursor:pointer;-webkit-tap-highlight-color:transparent}
-  .priority-star.filled{color:#e0a030}
-  .priority-star:active{transform:scale(1.15)}
+  .priority-row{display:flex;gap:3px;margin:6px -4px -4px}
+  .priority-star{display:flex;align-items:center;justify-content:center;flex:1;min-width:0;height:30px;font-size:19px;
+    line-height:1;color:#ddd0ce;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+  .priority-star.filled{color:#c99a4b}
+  .priority-star:active{transform:scale(1.2)}
   .card .actions{position:absolute;top:6px;right:6px}
   .menu-btn{border:none;background:rgba(255,255,255,.88);font-size:16px;color:var(--muted);cursor:pointer;
     width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;line-height:1;
@@ -222,7 +227,7 @@
     display:flex;align-items:center;gap:9px;
     background:var(--accent);color:#fff;border:none;cursor:pointer;
     padding:15px 26px;border-radius:999px;font-size:16px;font-weight:800;font-family:inherit;
-    box-shadow:0 8px 24px rgba(140,80,48,.42);
+    box-shadow:0 8px 24px rgba(86,20,22,.42);
   }
   .fab:active{background:var(--accent-dk)}
   .fab svg{width:20px;height:20px}
@@ -306,6 +311,11 @@
   .prev .m{font-size:13px;color:var(--muted);line-height:1.55}
   .prev .status-now{display:inline-block;margin-top:7px;font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent-dk)}
   .prev .status-now.warn{background:#f7dcae;color:#8a4b12}
+  .detail-priority-wrap{display:flex;align-items:center;gap:12px;margin:12px 0 4px;padding:10px 12px;
+    background:var(--accent-soft);border-radius:12px}
+  .dp-label{font-size:12.5px;font-weight:800;color:var(--accent-dk);flex:0 0 auto}
+  .detail-priority{display:flex;gap:6px;flex:0 0 auto}
+  .detail-priority .priority-star{flex:0 0 auto;width:34px;height:34px;font-size:24px}
 
   /* "already registered" badges (search/scan candidate lists + confirm sheet) */
   .res.owned{border-color:#e7bd83;background:#fff8ec}
@@ -433,6 +443,13 @@
     {key:"done",    label:"読んだ本",   color:getVar("--done"),    icon:"✅"}
   ];
   function getVar(n){try{return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}catch(e){return "#999";}}
+  function hexToRgba(hex, a){
+    hex=(hex||"").replace("#","");
+    if(hex.length===3){ hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2]; }
+    var r=parseInt(hex.substring(0,2),16), g=parseInt(hex.substring(2,4),16), b=parseInt(hex.substring(4,6),16);
+    if(!isFinite(r)||!isFinite(g)||!isFinite(b)) return "rgba(90,110,80,"+a+")";
+    return "rgba("+r+","+g+","+b+","+a+")";
+  }
   function statusOf(k){for(var i=0;i<STATUSES.length;i++){if(STATUSES[i].key===k)return STATUSES[i];}return STATUSES[0];}
   // Already-registered lookup, used to warn against buying a book twice (search results, ISBN-scan candidates, confirm sheet)
   function findExistingByIsbn(isbn){
@@ -747,17 +764,18 @@
     var svg='<svg viewBox="0 0 320 300" width="100%" style="max-width:360px;display:block;margin:0 auto">';
     [0.25,0.5,0.75,1].forEach(function(f){
       var pts=[]; for(var i=0;i<n;i++){ var p=pt(i,R*f); pts.push(p[0].toFixed(1)+','+p[1].toFixed(1)); }
-      svg+='<polygon points="'+pts.join(' ')+'" fill="none" stroke="#e6dccf" stroke-width="1"/>';
+      svg+='<polygon points="'+pts.join(' ')+'" fill="none" stroke="'+getVar("--line")+'" stroke-width="1"/>';
     });
-    for(var i=0;i<n;i++){ var e=pt(i,R); svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+e[0].toFixed(1)+'" y2="'+e[1].toFixed(1)+'" stroke="#eee3d5" stroke-width="1"/>'; }
+    for(var i=0;i<n;i++){ var e=pt(i,R); svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+e[0].toFixed(1)+'" y2="'+e[1].toFixed(1)+'" stroke="'+getVar("--line")+'" stroke-width="1"/>'; }
     var dp=[]; for(var i=0;i<n;i++){ var p=pt(i,R*((pct[SKILLS[i].key]||0)/100)); dp.push(p[0].toFixed(1)+','+p[1].toFixed(1)); }
-    svg+='<polygon points="'+dp.join(' ')+'" fill="rgba(176,110,63,.28)" stroke="#b5713f" stroke-width="2" stroke-linejoin="round"/>';
+    var radarAccent=getVar("--accent-dk")||"#561416";
+    svg+='<polygon points="'+dp.join(' ')+'" fill="'+hexToRgba(radarAccent,.28)+'" stroke="'+radarAccent+'" stroke-width="2" stroke-linejoin="round"/>';
     for(var i=0;i<n;i++){
       var p=pt(i,R*((pct[SKILLS[i].key]||0)/100));
-      svg+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="#b5713f"/>';
+      svg+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="'+radarAccent+'"/>';
       var lp=pt(i,R+14), x=lp[0], y=lp[1];
       var anchor=(x>cx+6)?'start':(x<cx-6?'end':'middle');
-      svg+='<text x="'+x.toFixed(1)+'" y="'+(y+3).toFixed(1)+'" font-size="10" font-weight="700" fill="#7a6a55" text-anchor="'+anchor+'">'+esc(SKILLS[i].short)+'</text>';
+      svg+='<text x="'+x.toFixed(1)+'" y="'+(y+3).toFixed(1)+'" font-size="10" font-weight="700" fill="'+getVar("--muted")+'" text-anchor="'+anchor+'">'+esc(SKILLS[i].short)+'</text>';
     }
     svg+='</svg>';
     return svg;
@@ -796,9 +814,9 @@
       var x=i*(barW+gap), y=h-padB-Math.max(bh,b.count>0?4:0);
       var barH=Math.max(bh,b.count>0?4:1);
       svg+='<g data-month="'+b.key+'" style="cursor:pointer">';
-      svg+='<rect x="'+x.toFixed(1)+'" y="'+(h-padB-barH).toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+barH.toFixed(1)+'" rx="3" fill="'+(b.count>0?'#b5713f':'#eee3d5')+'"/>';
-      if(b.count>0){ svg+='<text x="'+(x+barW/2).toFixed(1)+'" y="'+(h-padB-barH-4).toFixed(1)+'" font-size="9.5" font-weight="800" fill="#8c5030" text-anchor="middle">'+b.count+'</text>'; }
-      svg+='<text x="'+(x+barW/2).toFixed(1)+'" y="'+(h-8).toFixed(1)+'" font-size="8" fill="#9a8c7a" text-anchor="middle">'+(b.showYear?"'"+String(b.year).slice(2)+"/":"")+b.label+'</text>';
+      svg+='<rect x="'+x.toFixed(1)+'" y="'+(h-padB-barH).toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+barH.toFixed(1)+'" rx="3" fill="'+(b.count>0?getVar("--accent"):getVar("--line"))+'"/>';
+      if(b.count>0){ svg+='<text x="'+(x+barW/2).toFixed(1)+'" y="'+(h-padB-barH-4).toFixed(1)+'" font-size="9.5" font-weight="800" fill="'+getVar("--accent-dk")+'" text-anchor="middle">'+b.count+'</text>'; }
+      svg+='<text x="'+(x+barW/2).toFixed(1)+'" y="'+(h-8).toFixed(1)+'" font-size="8" fill="'+getVar("--muted")+'" text-anchor="middle">'+(b.showYear?"'"+String(b.year).slice(2)+"/":"")+b.label+'</text>';
       svg+='</g>';
     });
     svg+='</svg>';
@@ -979,18 +997,27 @@
   function openSkillSheet(){
     state.view='skill'; applyViewMode();
     var page=document.getElementById('skillPage');
-    page.innerHTML='<h2 class="skill-title">📊 あなたの読書スキル</h2><div id="skillBody"><div class="searching"><span class="spinner"></span> 読んだ本を分析中…</div></div>';
+    page.innerHTML='<h2 class="skill-title">📊 あなたの読書スキル<span id="skillRefreshing" class="sk-refresh-badge"></span></h2><div id="skillBody"></div>';
     try{ window.scrollTo(0,0); }catch(e){}
     var done=state.books.filter(function(b){return b.status==='done';});
+    // Render immediately from whatever's already cached (catz/desc/aiGenre) -- classifyBook()
+    // is a cheap synchronous keyword match and never itself needs a network round-trip, so
+    // opening the skill page no longer has to block on Google Books/AI calls to show something.
+    renderSkillBody(done);
     var need=done.filter(function(b){return !b.genre;});
+    var needAInow=geminiKey() ? done.filter(function(b){return !b.aiDone || b.aiVer!==AI_VER;}) : [];
+    if(!need.length && !needAInow.length) return; // everything already enriched/classified, nothing left to do
+    var badge=document.getElementById('skillRefreshing'); if(badge) badge.innerHTML=' <span class="spinner"></span>';
+    function finishRefresh(){
+      try{ if(state.view==='skill'){ renderSkillBody(done); var b2=document.getElementById('skillRefreshing'); if(b2) b2.innerHTML=''; } }catch(e){}
+    }
     Promise.all(need.map(enrichBook)).then(function(){
       if(!geminiKey()) return;
       var needAI=done.filter(function(b){return !b.aiDone || b.aiVer!==AI_VER;});
       if(!needAI.length) return;
-      var body=document.getElementById('skillBody'); if(body) body.innerHTML='<div class="searching"><span class="spinner"></span> 🤖 AIが内容を読んで分類中…（'+needAI.length+'冊）</div>';
       return runLimited(needAI, 4, applyAI);
-    }).then(function(){ try{save();}catch(e){} if(state.view==='skill') renderSkillBody(done); })
-      .catch(function(){ try{ if(state.view==='skill') renderSkillBody(done); }catch(e){} });
+    }).then(function(){ try{save();}catch(e){} finishRefresh(); })
+      .catch(finishRefresh);
   }
 
   var SORTMODE_KEY = "dokusho_sortmode_v1";
@@ -1685,6 +1712,14 @@
     var m=[]; if(b.author)m.push(esc(b.author)); if(b.publisher)m.push(esc(b.publisher));
     h+='<div class="m">'+m.join("<br>")+'</div>';
     h+='<span class="status-now">'+st.icon+' '+st.label+'</span></div></div>';
+    if(b.status==="want" || b.status==="stack"){
+      var pv0=b.priority||0;
+      h+='<div class="detail-priority-wrap"><span class="dp-label">優先度</span><div class="detail-priority" id="detailPriority">';
+      for(var pi=1; pi<=3; pi++){
+        h+='<span class="priority-star'+(pi<=pv0?" filled":"")+'" data-star="'+pi+'" aria-label="優先度'+pi+'">'+(pi<=pv0?"★":"☆")+'</span>';
+      }
+      h+='</div></div>';
+    }
     h+='<div id="skPrev">'+bizPreview(b)+'</div>';
     h+='<h2>棚を移動</h2><div class="shelf-choices">';
     STATUSES.forEach(function(s){
@@ -1707,6 +1742,23 @@
     h+='<button class="btn ghost" id="closeBtn">閉じる</button>';
     openSheet(h);
     var cov=document.querySelector("#sheet .prev .cov"); if(cov){ cov.parentNode.replaceChild(coverNode(b),cov); }
+    var detailPriority=document.getElementById("detailPriority");
+    if(detailPriority){
+      Array.prototype.forEach.call(detailPriority.querySelectorAll(".priority-star"),function(starEl){
+        starEl.onclick=function(){
+          var n=parseInt(starEl.dataset.star,10);
+          b.priority=(b.priority||0)===n ? 0 : n;
+          save();
+          var pv=b.priority||0;
+          Array.prototype.forEach.call(detailPriority.querySelectorAll(".priority-star"),function(se){
+            var sn=parseInt(se.dataset.star,10);
+            se.classList.toggle("filled", sn<=pv);
+            se.textContent = sn<=pv ? "★" : "☆";
+          });
+          render();
+        };
+      });
+    }
     if(geminiKey() && (!b.aiDone || b.aiVer!==AI_VER)){
       var sp=document.getElementById("skPrev"); if(sp){ sp.innerHTML='<div class="sk-prev out"><span class="spinner"></span> 🤖 AIが内容から判定中…</div>'; }
       applyAI(b).then(function(){ try{save();}catch(e){} var el=document.getElementById("skPrev"); if(el) el.innerHTML=bizPreview(b); render(); });
@@ -1846,8 +1898,8 @@
        '<button class="btn primary sbtn" id="searchBtn">検索</button></div></div>';
     h+='<div id="results"></div>';
     h+='<button class="btn ghost" id="cancelBtn">閉じる</button>';
-    h+='<div style="text-align:center;margin-top:6px"><a href="#" id="keyLink" style="font-size:12px;color:#9a8c7a;text-decoration:underline">検索がうまくいかない時（APIキー設定）</a></div>';
-    h+='<div style="text-align:center;margin-top:4px"><a href="#" id="aiLink" style="font-size:12px;color:#9a8c7a;text-decoration:underline">🤖 AIで内容から自動分類（Gemini APIキー）</a></div>';
+    h+='<div style="text-align:center;margin-top:6px"><a href="#" id="keyLink" style="font-size:12px;color:var(--muted);text-decoration:underline">検索がうまくいかない時（APIキー設定）</a></div>';
+    h+='<div style="text-align:center;margin-top:4px"><a href="#" id="aiLink" style="font-size:12px;color:var(--muted);text-decoration:underline">🤖 AIで内容から自動分類（Gemini APIキー）</a></div>';
     openSheet(h);
     var inp=document.getElementById("qInput");
     document.getElementById("camBtn").onclick=function(){ closeSheet(); startScan(); };
@@ -2081,6 +2133,11 @@
   function openSheet(html){ sheet.innerHTML=html; overlay.classList.add("on"); try{sheet.scrollTop=0;}catch(e){} document.body.classList.add("sheet-open"); }
   function closeSheet(){ overlay.classList.remove("on"); sheet.innerHTML=""; document.body.classList.remove("sheet-open"); }
   overlay.addEventListener("click",function(e){ if(e.target===overlay) closeSheet(); });
+  // Belt-and-suspenders for touch: a plain "click" listener can occasionally miss on real
+  // touchscreens (e.g. if the browser treats the tap as ambiguous with a scroll/gesture and
+  // never synthesizes a click). pointerdown fires immediately and unconditionally on tap,
+  // so backdrop-tap-to-close is reliable on phones too.
+  overlay.addEventListener("pointerdown",function(e){ if(e.target===overlay) closeSheet(); });
 
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
 
