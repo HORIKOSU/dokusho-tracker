@@ -495,27 +495,57 @@
     {key:'novel',    label:'文学・小説',    short:'文学',   icon:'📖', color:'#b06a4f'}
   ];
   function skillOf(k){ for(var i=0;i<SKILLS.length;i++){ if(SKILLS[i].key===k) return SKILLS[i]; } return SKILLS[6]; }
-  // keyword rules, checked in order; first hit wins; fallback = liberal
+  // keyword rules for the free-text (title/desc) scan; every hit is counted and the
+  // category with the most hits wins (see classifyBook) -- fallback = liberal
   var SKILL_RULES=[
-    {key:'it',        kw:['computer','programming','software','engineer','technolog','information technology','テクノロジー','プログラ','エンジニア','ソフトウェア','python','javascript','機械学習','人工知能','ディープラーニング','クラウド','アルゴリズム','データサイエンス','データ分析','情報技術']},
-    {key:'money',     kw:['investing','investment','finance','financial','stock market','投資','株式','資産運用','金融','会計','税金','ファイナンス','マネー','年金','資産形成','億り','家計']},
-    {key:'marketing', kw:['marketing','advertising','branding','マーケティング','営業','広告','ブランディング','販促','セールス','集客','コピーライティング','sns運用','pr']},
-    {key:'design',    kw:['design','graphic','photograph','illustrat','typography','デザイン','クリエイティブ','写真','イラスト','建築','フォント','タイポグラフィ','ui/ux','アート']},
-    {key:'novel',     kw:['fiction','novel','literature','poetry','小説','文学','物語','エッセイ','随筆','ミステリー','詩集','ノンフィクション']},
-    {key:'self',      kw:['self-help','self help','psychology','habit','motivation','mindfulness','自己啓発','習慣','心理','マインドセット','幸福','生き方','思考法','メンタル','モチベーション','人間関係','コミュニケーション']},
-    {key:'business',  kw:['business','management','economics','leadership','entrepreneur','経営','ビジネス','起業','リーダーシップ','マネジメント','戦略','組織','働き方','キャリア','経済','仕事術','会社']},
-    {key:'liberal',   kw:['science','history','philosophy','mathematics','physics','歴史','哲学','科学','教養','数学','物理','化学','生物','政治','宗教','地理','医学','雑学','サイエンス','社会学']}
+    {key:'it',        kw:['computer','programming','software','engineer','technolog','information technology','テクノロジー','プログラ','エンジニア','ソフトウェア','python','javascript','機械学習','人工知能','ディープラーニング','クラウド','アルゴリズム','データサイエンス','データ分析','情報技術','dx','デジタル変革','ノーコード','no-code','it業界','システム開発']},
+    {key:'money',     kw:['investing','investment','finance','financial','stock market','投資','株式','資産運用','金融','会計','税金','ファイナンス','マネー','年金','資産形成','億り','家計','nisa','ideco','投資信託','暗号資産','仮想通貨','ビットコイン','fx','節約','副収入']},
+    {key:'marketing', kw:['marketing','advertising','branding','マーケティング','営業','広告','ブランディング','販促','セールス','集客','コピーライティング','sns運用','pr','ec事業','ecサイト','グロースハック','コンテンツマーケティング','広報']},
+    {key:'design',    kw:['design','graphic','photograph','illustrat','typography','デザイン','クリエイティブ','写真','イラスト','建築','フォント','タイポグラフィ','ui/ux','アート','デザイン思考','プロダクトデザイン','ux','ui']},
+    {key:'novel',     kw:['fiction','novel','literature','poetry','小説','文学','物語','エッセイ','随筆','ミステリー','詩集','ノンフィクション','恋愛小説','ファンタジー','短編集','sf']},
+    {key:'self',      kw:['self-help','self help','psychology','habit','motivation','mindfulness','自己啓発','習慣','心理','マインドセット','幸福','生き方','思考法','メンタル','モチベーション','人間関係','コミュニケーション','習慣化','時間管理','集中力','ライフハック']},
+    {key:'business',  kw:['business','management','economics','leadership','entrepreneur','経営','ビジネス','起業','リーダーシップ','マネジメント','戦略','組織','働き方','キャリア','経済','仕事術','会社','人事','人材育成','組織開発','事業戦略']},
+    {key:'liberal',   kw:['science','history','philosophy','mathematics','physics','歴史','哲学','科学','教養','数学','物理','化学','生物','政治','宗教','地理','医学','雑学','サイエンス','社会学','宇宙','脳科学','進化','人類学','考古学']}
   ];
+  // Google Books' `categories` field (e.g. "Business & Economics / Marketing / General") is a
+  // much stronger, structured signal than scanning raw title/description text, so it's checked
+  // first -- most-specific subcategory phrases before the broad top-level category name.
+  var CATEGORY_RULES=[
+    {key:'money',     kw:['personal finance','investing','investment','money management']},
+    {key:'marketing', kw:['marketing','sales & selling','advertising & promotion']},
+    {key:'design',    kw:['architecture','photography','graphic design']},
+    {key:'self',      kw:['self-help','body, mind & spirit','health & fitness']},
+    {key:'business',  kw:['management','leadership','entrepreneurship','careers','business & economics']},
+    {key:'it',        kw:['computers','artificial intelligence','programming','technology & engineering']},
+    {key:'novel',     kw:['fiction','literary collections','literary criticism','poetry','drama','comics & graphic novels']},
+    {key:'liberal',   kw:['mathematics','philosophy','religion','social science','political science','biography & autobiography','education','medical','science']}
+  ];
+  function classifyByCategory(catz){
+    if(!catz) return '';
+    var hay=String(catz).toLowerCase();
+    for(var i=0;i<CATEGORY_RULES.length;i++){
+      var kw=CATEGORY_RULES[i].kw;
+      for(var j=0;j<kw.length;j++){ if(hay.indexOf(kw[j])>=0) return CATEGORY_RULES[i].key; }
+    }
+    return '';
+  }
   function classifyBook(b){
     if(b.aiGenre && b.aiVer===AI_VER) return b.aiGenre;
+    var byCat = classifyByCategory(b.catz);
+    if(byCat) return byCat;
     var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.desc||'')).toLowerCase();
     // AIそのものが主題の本のみ IT・技術へ（「AI時代」等の弱い修飾語では発動しない）
     if(hay.indexOf('生成ai')>=0 || hay.indexOf('chatgpt')>=0 || hay.indexOf('人工知能')>=0 || hay.indexOf('機械学習')>=0 || hay.indexOf('ディープラーニング')>=0 || hay.indexOf('大規模言語モデル')>=0) return 'it';
+    // count keyword hits per category and take the strongest match, rather than the first
+    // rule (in array order) that happens to match -- avoids a single incidental keyword
+    // from an unrelated category winning over a book's true, more-repeated topic
+    var bestKey=null, bestScore=0;
     for(var i=0;i<SKILL_RULES.length;i++){
-      var kw=SKILL_RULES[i].kw;
-      for(var j=0;j<kw.length;j++){ if(hay.indexOf(kw[j])>=0) return SKILL_RULES[i].key; }
+      var kw=SKILL_RULES[i].kw, cnt=0;
+      for(var j=0;j<kw.length;j++){ if(hay.indexOf(kw[j])>=0) cnt++; }
+      if(cnt>bestScore){ bestScore=cnt; bestKey=SKILL_RULES[i].key; }
     }
-    return 'liberal';
+    return bestKey || 'liberal';
   }
   function computeSkills(books){
     var groups={}; SKILLS.forEach(function(s){ groups[s.key]=[]; });
