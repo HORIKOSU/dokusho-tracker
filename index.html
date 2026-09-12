@@ -191,11 +191,16 @@
   }
   .cover.ph{display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--accent-dk);opacity:.55}
   .info{flex:1;min-width:0;display:flex;flex-direction:column;margin-top:7px}
-  .info .title{font-size:12px;font-weight:800;line-height:1.32;margin:0 0 3px;
+  .info .title{font-size:12px;font-weight:800;line-height:1.32;margin:0 0 3px;min-height:31.7px;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .info .meta{font-size:10.5px;color:var(--muted);line-height:1.4;
+  .info .meta{font-size:10.5px;color:var(--muted);line-height:1.4;min-height:14.7px;
     display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
   .info .isbn{display:none}
+  .priority-row{display:flex;gap:1px;margin-top:4px}
+  .priority-star{display:flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:14px;
+    line-height:1;color:#d9cdbb;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .priority-star.filled{color:#e0a030}
+  .priority-star:active{transform:scale(1.15)}
   .card .actions{position:absolute;top:6px;right:6px}
   .menu-btn{border:none;background:rgba(255,255,255,.88);font-size:16px;color:var(--muted);cursor:pointer;
     width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;line-height:1;
@@ -1031,6 +1036,12 @@
       var ao = dateKeyFor(a, tab), bo = dateKeyFor(b, tab);
       return ao - bo;
     }
+    // default mode: 積読・読みたい本は「★の多い順」を常に自動適用し、同数(0含む)は新規登録順(新しい順)
+    if(tab==="want" || tab==="stack"){
+      var pa=a.priority||0, pb=b.priority||0;
+      if(pa!==pb) return pb-pa;
+      return dateKeyFor(b, tab) - dateKeyFor(a, tab);
+    }
     return sortKeyFor(b, tab) - sortKeyFor(a, tab);
   }
   function dateKeyFor(b, tab){
@@ -1527,6 +1538,25 @@
     info.querySelector(".title").textContent = b.title || "(タイトル未取得)";
     info.querySelector(".meta").textContent = meta.join(" ／ ");
     card.appendChild(info);
+    if(b.status==="want" || b.status==="stack"){
+      var prow=document.createElement("div"); prow.className="priority-row";
+      var pv=b.priority||0;
+      for(var pi=1; pi<=3; pi++){
+        (function(n){
+          var sEl=document.createElement("span");
+          sEl.className="priority-star"+(n<=pv?" filled":"");
+          sEl.textContent = n<=pv ? "★" : "☆";
+          sEl.setAttribute("aria-label","優先度"+n);
+          sEl.onclick=function(ev){
+            ev.stopPropagation();
+            b.priority = (b.priority||0)===n ? 0 : n;
+            save(); render();
+          };
+          prow.appendChild(sEl);
+        })(pi);
+      }
+      info.appendChild(prow);
+    }
     var act=document.createElement("div"); act.className="actions";
     var mb=document.createElement("button"); mb.className="menu-btn"; mb.innerHTML="⋯"; mb.setAttribute("aria-label","操作");
     mb.onclick=function(ev){ ev.stopPropagation(); openBookMenu(b); };
@@ -1606,6 +1636,7 @@
 
     card.addEventListener("pointerdown", function(ev){
       if(ev.button!=null && ev.button!==0) return;
+      if(state.tab==="want" || state.tab==="stack") return; // これらは★優先度＋新規登録順で自動的に並ぶため手動並び替え対象外
       if(sortModeFor(state.tab)!=="default") return; // manual drag only makes sense in the default sort mode
       startX=ev.clientX; startY=ev.clientY; pointerId=ev.pointerId;
       pressTimer=setTimeout(function(){
@@ -2086,11 +2117,14 @@
   document.getElementById("sortBtn").addEventListener("click",function(){ openSortSheet(); });
   function openSortSheet(){
     var cur = sortModeFor(state.tab);
+    var starTab = (state.tab==="want" || state.tab==="stack");
     var h = '<div class="grip"></div><h2>並び替え</h2><div class="sort-choices">';
     SORT_MODES.forEach(function(m){
+      var label=m.label, note=m.note;
+      if(m.key==="default" && starTab){ label="★が多い順(そのまま)"; note="同数(★なし含む)は新規登録順"; }
       h += '<button class="sort-btn'+(m.key===cur?" cur":"")+'" data-sort="'+m.key+'">'
-        + '<span class="sb-label">'+(m.key===cur?"✓ ":"")+esc(m.label)+'</span>'
-        + (m.note?'<span class="sb-note">'+esc(m.note)+'</span>':'')
+        + '<span class="sb-label">'+(m.key===cur?"✓ ":"")+esc(label)+'</span>'
+        + (note?'<span class="sb-note">'+esc(note)+'</span>':'')
         + '</button>';
     });
     h += '</div><button class="btn ghost" id="sortCloseBtn">閉じる</button>';
@@ -2102,7 +2136,9 @@
         saveSortMode();
         render();
         closeSheet();
-        toast("並び替え:「"+(SORT_MODES.filter(function(m){return m.key===btn.dataset.sort;})[0]||{}).label+"」");
+        var pickedM=(SORT_MODES.filter(function(m){return m.key===btn.dataset.sort;})[0]||{});
+        var pickedLabel=(pickedM.key==="default" && starTab) ? "★が多い順(そのまま)" : pickedM.label;
+        toast("並び替え:「"+pickedLabel+"」");
       };
     });
     document.getElementById("sortCloseBtn").onclick=function(){ closeSheet(); };
