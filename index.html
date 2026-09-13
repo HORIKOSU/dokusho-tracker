@@ -1635,7 +1635,7 @@
     if(b.status==="want" || b.status==="stack"){
       var prow=document.createElement("div"); prow.className="priority-row";
       var pv=b.priority||0;
-      for(var pi=1; pi<=3; pi++){
+      for(var pi=1; pi<=5; pi++){
         (function(n){
           var sEl=document.createElement("span");
           sEl.className="priority-star"+(n<=pv?" filled":"");
@@ -1784,7 +1784,7 @@
     if(b.status==="want" || b.status==="stack"){
       var pv0=b.priority||0;
       h+='<div class="detail-priority-wrap"><span class="dp-label">優先度</span><div class="detail-priority" id="detailPriority">';
-      for(var pi=1; pi<=3; pi++){
+      for(var pi=1; pi<=5; pi++){
         h+='<span class="priority-star'+(pi<=pv0?" filled":"")+'" data-star="'+pi+'" aria-label="優先度'+pi+'">'+(pi<=pv0?"★":"☆")+'</span>';
       }
       h+='</div></div>';
