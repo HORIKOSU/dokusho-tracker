@@ -1762,6 +1762,17 @@
       return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0");
     }catch(e){ return ""; }
   }
+  // Google Books' publishedDate (and openBD's pubdate) can be a full date, year-month,
+  // or year-only string -- show only the precision actually given, rather than guessing
+  // a fake month/day via new Date(...).
+  function fmtPubDate(pd){
+    if(!pd) return "";
+    var s=String(pd).trim();
+    var m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[1]+"年"+parseInt(m[2],10)+"月"+parseInt(m[3],10)+"日";
+    m=s.match(/^(\d{4})-(\d{2})/); if(m) return m[1]+"年"+parseInt(m[2],10)+"月";
+    m=s.match(/^(\d{4})/); if(m) return m[1]+"年";
+    return s;
+  }
   function historyHtml(b){
     var h=ensureHistory(b);
     var rows=h.slice().reverse().map(function(e){
@@ -1779,6 +1790,7 @@
     h+='<div class="cov"></div>';
     h+='<div><div class="t">'+esc(b.title||"(タイトル未取得)")+'</div>';
     var m=[]; if(b.author)m.push(esc(b.author)); if(b.publisher)m.push(esc(b.publisher));
+    var pd=fmtPubDate(b.pubdate); if(pd)m.push("発売日: "+esc(pd));
     h+='<div class="m">'+m.join("<br>")+'</div>';
     h+='<span class="status-now">'+st.icon+' '+st.label+'</span></div></div>';
     if(b.status==="want" || b.status==="stack"){
