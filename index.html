@@ -1503,6 +1503,44 @@
     html += '</div>';
     return html;
   }
+  // Last N months (including the current one), oldest first -- used by the hero card
+  // instead of the by-year rings (which pile up "2024年" etc. that aren't very useful
+  // once there's reading history spanning several years).
+  function computeRecentMonths(books, n){
+    var now=new Date(), buckets=[];
+    for(var i=n-1;i>=0;i--){
+      var d=new Date(now.getFullYear(), now.getMonth()-i, 1);
+      buckets.push({key:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label:(d.getMonth()+1)+'月', count:0});
+    }
+    var idx={}; buckets.forEach(function(b,i){ idx[b.key]=i; });
+    (books||[]).forEach(function(b){
+      var k=doneMonthKey(b);
+      if(k!=null && Object.prototype.hasOwnProperty.call(idx,k)) buckets[idx[k]].count++;
+    });
+    return buckets;
+  }
+  function buildMonthGauges(buckets){
+    if(!buckets || !buckets.length) return "";
+    var maxc=1; buckets.forEach(function(b){ if(b.count>maxc) maxc=b.count; });
+    var R=34, C=2*Math.PI*R;
+    var html = '<div class="hero-year-gauges">';
+    buckets.forEach(function(b){
+      var pct = maxc>0 ? (b.count/maxc*100) : 0;
+      var dashoffset = C*(1-pct/100);
+      html += '<div class="hero-year-gauge">'
+        + '<div class="hyg-ring-wrap">'
+          + '<svg viewBox="0 0 100 100" width="48" height="48">'
+            + '<circle class="hgr-track" cx="50" cy="50" r="'+R+'"/>'
+            + '<circle class="hgr-fill" cx="50" cy="50" r="'+R+'" style="stroke-dasharray:'+C.toFixed(1)+';stroke-dashoffset:'+dashoffset.toFixed(1)+'"/>'
+          + '</svg>'
+          + '<div class="hyg-num">'+b.count+'</div>'
+        + '</div>'
+        + '<div class="hyg-label">'+b.label+'</div>'
+        + '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
   function nextMilestone(totalDone){
     var step = totalDone<50 ? 10 : totalDone<100 ? 25 : totalDone<500 ? 50 : 100;
     var prev = Math.floor(totalDone/step)*step;
@@ -1540,12 +1578,12 @@
       +'</div>'
       +'<div class="hero-gauge-label">累計'+totalDone+'冊・次の'+ms.next+'冊まで</div>'
       +'</div>';
-    var yearGauges = buildYearGauges(computeYearlyTotals(state.books));
+    var monthGauges = buildMonthGauges(computeRecentMonths(state.books, 3));
     el.innerHTML='<div class="hero-num">'+thisMonth+'<small>冊</small></div>'
       +'<div class="hero-label">🗓️ 今月読んだ本</div>'
       +'<div class="hero-sub">'+sub+'</div>'
       +gauge
-      +yearGauges;
+      +monthGauges;
   }
 
   // In-memory, per-page-load cache of cover-lookup outcomes (NOT persisted to localStorage).
@@ -2300,7 +2338,7 @@
     rd.readAsText(f);
   });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, doneYear:doneYear, computeYearlyTotals:computeYearlyTotals, buildYearGauges:buildYearGauges, nextMilestone:nextMilestone, lastDoneEntry:lastDoneEntry, render:render, coverSessionCache:coverSessionCache, coverCacheKey:coverCacheKey, sortKeyFor:sortKeyFor };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, doneYear:doneYear, computeYearlyTotals:computeYearlyTotals, buildYearGauges:buildYearGauges, computeRecentMonths:computeRecentMonths, buildMonthGauges:buildMonthGauges, nextMilestone:nextMilestone, lastDoneEntry:lastDoneEntry, render:render, coverSessionCache:coverSessionCache, coverCacheKey:coverCacheKey, sortKeyFor:sortKeyFor };
 
   render();
 })();
