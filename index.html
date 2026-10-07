@@ -63,6 +63,20 @@
   .hero-gauge-ring-center b{font-size:15px;font-weight:800;line-height:1.1}
   .hero-gauge-ring-center span{font-size:9.5px;opacity:.85;margin-top:0}
   .hero-gauge-label{margin-top:5px;font-size:11px;font-weight:700;opacity:.92;text-align:center}
+  .hero-goal-btn{margin-top:6px;border:none;cursor:pointer;font-family:inherit;color:#fff;font-size:11px;font-weight:800;
+    background:rgba(255,255,255,.18);padding:5px 12px;border-radius:999px;-webkit-tap-highlight-color:transparent}
+  .hero-goal-btn:active{background:rgba(255,255,255,.3)}
+  .hero-goal-btn.done{background:rgba(255,255,255,.92);color:var(--accent-dk)}
+  .goal-stepper{display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0 6px}
+  .goal-step-btn{width:46px;height:46px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--accent-dk);
+    font-size:24px;font-weight:800;line-height:1;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+  .goal-step-btn:active{background:var(--accent-soft)}
+  .goal-val{min-width:96px;text-align:center;font-size:44px;font-weight:900;color:var(--accent-dk);line-height:1}
+  .goal-val small{font-size:16px;font-weight:700;margin-left:3px}
+  .goal-presets{display:flex;flex-wrap:nowrap;gap:5px;justify-content:center;margin:12px 0 4px}
+  .goal-chip{border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:8px 0;flex:1 1 0;min-width:0;max-width:56px;text-align:center;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
+  .goal-chip.cur{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-dk)}
+  .goal-note{text-align:center;font-size:12px;color:var(--muted);margin:8px 0 2px}
   .hero-year-gauges{position:relative;display:flex;justify-content:center;gap:14px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.25);flex-wrap:wrap}
   .hero-year-gauge{display:flex;flex-direction:column;align-items:center}
   .hyg-ring-wrap{position:relative;width:48px;height:48px}
@@ -1095,6 +1109,15 @@
   function saveSortMode(){
     try{ localStorage.setItem(SORTMODE_KEY, JSON.stringify(state.sortMode||{})); }catch(e){}
   }
+  // Monthly reading goal (number of books to finish per month). 0 = not set.
+  var GOAL_KEY = "dokusho_goal_v1";
+  function loadGoal(){
+    try{ var raw=localStorage.getItem(GOAL_KEY); if(!raw) return 0; var d=JSON.parse(raw); var n=parseInt(d&&d.monthly,10); return (isFinite(n)&&n>0)?Math.min(n,99):0; }
+    catch(e){ return 0; }
+  }
+  function saveGoal(n){
+    try{ localStorage.setItem(GOAL_KEY, JSON.stringify({monthly:n})); }catch(e){}
+  }
   function sortModeFor(tab){ return (state.sortMode && state.sortMode[tab]) || "default"; }
   function compareItemsForTab(a, b, tab){
     var mode = sortModeFor(tab);
@@ -1565,18 +1588,32 @@
     else if(diff>0){ sub="📈 先月より"+diff+"冊多いペース"; }
     else if(diff<0){ sub="📉 先月より"+Math.abs(diff)+"冊少ないペース"; }
     else { sub="➡️ 先月と同じペース"; }
-    var ms=nextMilestone(totalDone);
-    var R=42, C=2*Math.PI*R;
-    var dashoffset=C*(1-ms.pct/100);
+    var goal=loadGoal();
+    var R=42, C=2*Math.PI*R, ringPct, centerHtml, labelHtml;
+    if(goal>0){
+      ringPct=Math.max(0,Math.min(100,thisMonth/goal*100));
+      centerHtml='<b>'+thisMonth+'/'+goal+'</b><span>冊</span>';
+      var remain=goal-thisMonth;
+      labelHtml = remain>0
+        ? '<button type="button" class="hero-goal-btn" id="goalBtn">🎯 今月の目標 '+goal+'冊 ・ あと'+remain+'冊 ✎</button>'
+        : '<button type="button" class="hero-goal-btn done" id="goalBtn">🎉 今月の目標 '+goal+'冊 達成！ ✎</button>';
+    } else {
+      var ms=nextMilestone(totalDone);
+      ringPct=ms.pct;
+      centerHtml='<b>あと'+ms.remain+'</b><span>冊</span>';
+      labelHtml='<div class="hero-gauge-label">累計'+totalDone+'冊・次の'+ms.next+'冊まで</div>'
+        +'<button type="button" class="hero-goal-btn" id="goalBtn">🎯 月間目標を設定</button>';
+    }
+    var dashoffset=C*(1-ringPct/100);
     var gauge='<div class="hero-gauge">'
       +'<div class="hero-gauge-ring-wrap">'
         +'<svg class="hero-gauge-ring" viewBox="0 0 100 100" width="70" height="70">'
           +'<circle class="hgr-track" cx="50" cy="50" r="'+R+'"/>'
           +'<circle class="hgr-fill" cx="50" cy="50" r="'+R+'" style="stroke-dasharray:'+C.toFixed(1)+';stroke-dashoffset:'+dashoffset.toFixed(1)+'"/>'
         +'</svg>'
-        +'<div class="hero-gauge-ring-center"><b>あと'+ms.remain+'</b><span>冊</span></div>'
+        +'<div class="hero-gauge-ring-center">'+centerHtml+'</div>'
       +'</div>'
-      +'<div class="hero-gauge-label">累計'+totalDone+'冊・次の'+ms.next+'冊まで</div>'
+      +labelHtml
       +'</div>';
     var monthGauges = buildMonthGauges(computeRecentMonths(state.books, 3));
     el.innerHTML='<div class="hero-num">'+thisMonth+'<small>冊</small></div>'
@@ -1584,6 +1621,33 @@
       +'<div class="hero-sub">'+sub+'</div>'
       +gauge
       +monthGauges;
+    var gb=document.getElementById("goalBtn"); if(gb) gb.onclick=openGoalSheet;
+  }
+  function openGoalSheet(){
+    var cur=loadGoal(), val=cur>0?cur:3;
+    var PRESETS=[1,2,3,4,5,8,10];
+    var h='<div class="grip"></div><h2>🎯 月間の読書目標</h2>'
+      +'<div class="goal-note">1か月に読み終える冊数を決めましょう</div>'
+      +'<div class="goal-stepper"><button type="button" class="goal-step-btn" id="goalMinus" aria-label="減らす">−</button>'
+      +'<div class="goal-val"><span id="goalNum">'+val+'</span><small>冊</small></div>'
+      +'<button type="button" class="goal-step-btn" id="goalPlus" aria-label="増やす">＋</button></div>'
+      +'<div class="goal-presets">'+PRESETS.map(function(n){ return '<button type="button" class="goal-chip" data-preset="'+n+'">'+n+'冊</button>'; }).join('')+'</div>'
+      +'<button class="btn primary" id="goalSave">この目標で保存</button>'
+      +(cur>0?'<button class="btn danger" id="goalClear">目標を解除</button>':'')
+      +'<button class="btn ghost" id="goalClose">閉じる</button>';
+    openSheet(h);
+    function paint(){
+      document.getElementById("goalNum").textContent=val;
+      Array.prototype.forEach.call(document.querySelectorAll("#sheet .goal-chip"),function(c){ c.classList.toggle("cur", parseInt(c.dataset.preset,10)===val); });
+    }
+    paint();
+    document.getElementById("goalMinus").onclick=function(){ val=Math.max(1,val-1); paint(); };
+    document.getElementById("goalPlus").onclick=function(){ val=Math.min(99,val+1); paint(); };
+    Array.prototype.forEach.call(document.querySelectorAll("#sheet .goal-chip"),function(c){ c.onclick=function(){ val=parseInt(c.dataset.preset,10); paint(); }; });
+    document.getElementById("goalSave").onclick=function(){ saveGoal(val); closeSheet(); render(); toast("月間目標を"+val+"冊に設定しました"); };
+    var clr=document.getElementById("goalClear");
+    if(clr) clr.onclick=function(){ saveGoal(0); closeSheet(); render(); toast("月間目標を解除しました"); };
+    document.getElementById("goalClose").onclick=function(){ closeSheet(); };
   }
 
   // In-memory, per-page-load cache of cover-lookup outcomes (NOT persisted to localStorage).
