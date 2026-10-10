@@ -1646,20 +1646,20 @@
   function buildYearShelf(books){
     var yr=new Date().getFullYear(), n=0;
     (books||[]).forEach(function(b){ if(doneYear(b)===yr) n++; });
-    var PER=28, MAXROWS=2, shown=Math.min(n, PER*MAXROWS);
+    var PER=24, MAXROWS=2, shown=Math.min(n, PER*MAXROWS);
     var rows=Math.max(1, Math.ceil(shown/PER));
     var cols=["#ffffff","#f3c9c9","#ffd9a8","#cfe3ff","#d9f0cf","#f0d4ff"];
     var from = SHELF_PREV<0 ? 0 : (n>SHELF_PREV ? Math.min(SHELF_PREV, shown) : shown);
     SHELF_PREV=n;
     var step=Math.min(32, 900/Math.max(1, shown-from));
-    var W=330, pitch=W/PER, bw=pitch*0.68, rowH=22, boardH=3, H=rows*(rowH+boardH+4)+2;
+    var W=330, pitch=W/PER, bw=pitch*0.68, rowH=28, boardH=3, H=rows*(rowH+boardH+4)+2;
     var svg='<svg class="hshelf-svg" viewBox="0 0 '+W+' '+H+'" width="100%" preserveAspectRatio="xMidYMax meet" aria-hidden="true">';
     for(var r=0;r<rows;r++){
       var yb=H-2-(rows-1-r)*(rowH+boardH+4)-boardH;
       svg+='<rect x="0" y="'+yb+'" width="'+W+'" height="'+boardH+'" rx="1.5" fill="rgba(255,255,255,.5)"/>';
       var cnt=Math.min(PER, shown-r*PER);
       for(var i=0;i<cnt;i++){
-        var idx=r*PER+i, h=12+((idx*37+11)%9), x=2+i*pitch+(pitch-bw)/2;
+        var idx=r*PER+i, h=16+((idx*37+11)%11), x=2+i*pitch+(pitch-bw)/2;
         var last=(idx===shown-1), tilt=last?' hs-last':'';
         var play=idx>=from;
         var delay=play?' style="animation-delay:'+Math.round(120+(idx-from)*step)+'ms"':'';
