@@ -96,7 +96,12 @@
   .hs-sway{transform-box:fill-box;transform-origin:50% 100%;animation:hsWave 4.4s ease-in-out infinite}
   @keyframes hsPop{0%{opacity:0;transform:translateY(10px) scaleY(.2)}55%{opacity:1;transform:translateY(-3px) scaleY(1.1)}100%{opacity:1;transform:translateY(0) scaleY(1)}}
   @keyframes hsWave{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
-  @media (prefers-reduced-motion: reduce){ .hs-in,.hs-sway{animation:none} }
+  .hs-hop{transform-box:fill-box;transform-origin:50% 100%;animation:hsHop 9s ease-in-out infinite}
+  @keyframes hsHop{0%,28%,40%,100%{transform:translateY(0) scaleY(1)}32%{transform:translateY(-4.5px) scaleY(1.1)}36%{transform:translateY(0) scaleY(.94)}}
+  .hs-shine{animation:hsShine 9s ease-in-out 3.2s infinite;transform:translateX(-60px) skewX(-20deg);pointer-events:none}
+  @keyframes hsShine{0%{transform:translateX(-60px) skewX(-20deg)}24%,100%{transform:translateX(400px) skewX(-20deg)}}
+  .hero-num .hn-val{font-variant-numeric:tabular-nums}
+  @media (prefers-reduced-motion: reduce){ .hs-in,.hs-sway,.hs-hop,.hs-shine{animation:none} .hs-shine{display:none} }
   .hero-goal-btn{margin-top:6px;border:none;cursor:pointer;font-family:inherit;color:#fff;font-size:11px;font-weight:800;
     background:rgba(255,255,255,.18);padding:5px 12px;border-radius:999px;-webkit-tap-highlight-color:transparent}
   .hero-goal-btn:active{background:rgba(255,255,255,.3)}
@@ -156,6 +161,44 @@
   .cov-cell.l3 .cc-fill{background:#8a3a3a}
   .cov-cell[data-biz]{cursor:pointer}
   .cov-cell[data-biz]:active{filter:brightness(.94)}
+  .cov-cell.l3{color:#fff;background:#8a3a3a;border-color:#8a3a3a}
+  .cs-wrap{margin-top:20px;border-top:1px solid var(--accent-soft);padding-top:16px}
+  .cs-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+  .cs-card:active{filter:brightness(.96)}
+  .cs-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;font-weight:800}
+  .cs-d{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cs-st{flex:0 0 auto;font-size:10.5px;color:var(--muted);font-weight:700;border:1px dashed var(--line);border-radius:999px;padding:1px 8px}
+  .cs-st.g{border-style:solid;background:var(--accent-soft);color:var(--accent-dk);border-color:var(--accent-soft)}
+  .cs-bk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px}
+  .cs-tag{flex:0 0 auto;font-size:10px;font-weight:800;background:var(--accent-soft);color:var(--accent-dk);border-radius:999px;padding:2px 8px}
+  .cs-t{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cs-gain{flex:0 0 auto;color:var(--accent);font-size:14px}
+  .cs-empty{font-size:12px;color:var(--muted);line-height:1.6;background:#fff;border:1px dashed var(--line);border-radius:12px;padding:10px 12px}
+  .cov-chips{display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap}
+  .cov-chip{font-family:inherit;font-size:11.5px;font-weight:800;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+  .cov-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .cov2{display:flex;flex-direction:column}
+  .cd{border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:6px;overflow:hidden}
+  .cd.open{border-color:#d9a3a0}
+  .cd-h{display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;border:none;background:none;font-family:inherit;color:var(--ink);text-align:left;cursor:pointer}
+  .cd-n{flex:0 0 108px;font-size:11.5px;font-weight:800;line-height:1.25}
+  .cd-sq{flex:1;display:flex;flex-wrap:wrap;gap:3px;min-width:0}
+  .cd-sq i,.cov-lg i{width:12px;height:12px;border-radius:3px;display:block;background:#eadad6}
+  .cd-sq i.l1,.cov-lg i.l1{background:#f0c9c6}
+  .cd-sq i.l2,.cov-lg i.l2{background:#d9a3a0}
+  .cd-sq i.l3,.cov-lg i.l3{background:#8a3a3a}
+  .cd-r{flex:0 0 auto;font-size:10.5px;color:var(--muted);font-weight:700}
+  .cd-r b{font-size:12.5px;color:var(--accent-dk)}
+  .cd-c{flex:0 0 auto;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .2s;margin:0 2px 0 2px}
+  .cd.open .cd-c{transform:rotate(45deg)}
+  .cd-b{display:none;padding:0 12px 12px}
+  .cd.open .cd-b{display:block}
+  .cov-lg{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);font-weight:700}
+  .cov2[data-f=strong] .cd{order:var(--os)}
+  .cov2[data-f=unexp] .cd:not(.has-unexp), .cov2[data-f=grow] .cd:not(.has-grow){display:none}
+  .cov2[data-f=unexp] .cd-b, .cov2[data-f=grow] .cd-b{display:block}
+  .cov2[data-f=unexp] .cov-cell:not(.l0), .cov2[data-f=grow] .cov-cell:not(.l1){display:none}
+  .cov2[data-f=unexp] .cd-sq i:not(.l0), .cov2[data-f=grow] .cd-sq i:not(.l1){opacity:.25}
   .cov-legend{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px}
   .skd-back{background:none;border:none;color:var(--accent-dk);font-size:13px;font-weight:700;padding:4px 0;margin-bottom:10px;cursor:pointer}
   .skd-head{margin-bottom:4px}
@@ -330,6 +373,10 @@
   }
   .btn.primary{background:var(--accent);color:#fff}
   .btn.ghost{background:transparent;color:var(--muted)}
+  .cr-track{height:10px;border-radius:999px;background:var(--accent-soft);overflow:hidden;margin:10px 0 6px}
+  .cr-fill{display:block;height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .25s}
+  .cr-stat{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted)}
+  .cr-note{font-size:12px;color:var(--muted);line-height:1.6;margin:6px 0 10px}
   .btn.danger{background:#fff;color:#c0392b;border:1.5px solid #edd0cc}
 
   .field{margin:12px 0}
@@ -530,7 +577,8 @@
     x:'<path d="M6 6l12 12M18 6L6 18"/>',
     alert:'<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.2v.1"/>',
     sparkles:'<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
-    map:'<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>'
+    map:'<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
+    refresh:'<path d="M20 11a8 8 0 0 0-14-4.5L4 9M4 4v5h5M4 13a8 8 0 0 0 14 4.5L20 15M20 20v-5h-5"/>'
   };
   function ic(n){ return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||'')+'</svg>'; }
   var STATUSES = [
@@ -833,28 +881,92 @@
     return {pct:pct, counts:counts, total:total, covered:covered, groups:groups, avg: total?Math.round(sum/total):0};
   }
   function covLevel(p){ return p>=80?3:(p>=40?2:(p>0?1:0)); }
+  var COV_OPEN={}, COV_FILTER='all';
+  function bizLabelOf(key){
+    var out=null;
+    BIZ_DOMAINS.forEach(function(d){ d.skills.forEach(function(s){ if(s.key===key) out={skill:s.label, domain:d.label}; }); });
+    return out;
+  }
+  // 積読・読みたい本の中から、読了でゲージが一番上がる本をスキル別に1冊ずつ選び、伸びしろ順にTOP3
+  function computeSuggestions(cov){
+    var best={};
+    state.books.forEach(function(b){
+      if(b.status!=='want' && b.status!=='stack') return;
+      var k=b.bizskill||mapToBizSkill(b); if(!k||!cov.groups[k]) return;
+      var base=cov.groups[k], curP=skillPctFromBooks(base), d=skillPctFromBooks(base.concat([b]))-curP;
+      if(d<=0) return;
+      if(!best[k] || d>best[k].delta) best[k]={key:k,book:b,delta:d,cur:curP};
+    });
+    return Object.keys(best).map(function(k){ return best[k]; })
+      .sort(function(x,y){ return (y.delta-x.delta) || (x.cur-y.cur); }).slice(0,3);
+  }
+  function buildSuggestHTML(cov){
+    var list=computeSuggestions(cov);
+    var h='<div class="cs-wrap"><div class="cov-head"><span class="cov-title">'+ic("target")+'次に伸ばすなら</span><span class="cov-rate">伸びしろ TOP3</span></div>';
+    if(!list.length){
+      h+='<div class="cs-empty">「読みたい」「積読」の本を増やすと、ゲージが一番上がる本をここで提案します。</div></div>';
+      return h;
+    }
+    list.forEach(function(x){
+      var lb=bizLabelOf(x.key)||{skill:'',domain:''};
+      var st = x.cur>0 ? '育成中 '+x.cur+'%' : '未開拓';
+      h+='<div class="cs-card" data-sug="'+esc(x.book.id)+'"><div class="cs-top"><span class="cs-d">'+esc(lb.domain)+' ＞ '+esc(lb.skill)+'</span><span class="cs-st'+(x.cur>0?' g':'')+'">'+st+'</span></div>'
+        +'<div class="cs-bk"><span class="cs-tag">'+(x.book.status==='stack'?'積読':'読みたい')+'</span><span class="cs-t">'+esc(x.book.title||'(無題)')+'</span><b class="cs-gain">+'+x.delta+'%</b></div></div>';
+    });
+    h+='</div>';
+    return h;
+  }
   function buildCoverageHTML(cov){
     var rate=cov.total?Math.round(cov.covered/cov.total*100):0;
-    var h='<div class="cov-wrap"><div class="cov-head"><span class="cov-title">'+ic("map")+'ビジネススキル カバレッジ</span><span class="cov-rate">開拓 '+cov.covered+'/'+cov.total+'・平均 '+cov.avg+'%</span></div>';
+    var h=buildSuggestHTML(cov);
+    h+='<div class="cov-wrap"><div class="cov-head"><span class="cov-title">'+ic("map")+'ビジネススキル カバレッジ</span><span class="cov-rate">開拓 '+cov.covered+'/'+cov.total+'・平均 '+cov.avg+'%</span></div>';
     h+='<div class="cov-bar"><div style="width:'+rate+'%"></div></div>';
-    h+='<div class="cov-cap">冊数でなく本のレベル×重複度でゲージ算出（16分野'+BIZ_FLAT.length+'スキル／グロービス体系を参考）</div>';
+    var F=[['all','すべて'],['unexp','未開拓'],['grow','育成中'],['strong','強い順']];
+    h+='<div class="cov-chips">'+F.map(function(f){ return '<button type="button" class="cov-chip'+(COV_FILTER===f[0]?' on':'')+'" data-covf="'+f[0]+'">'+f[1]+'</button>'; }).join('')+'</div>';
+    // 分野ごとの平均で「強い順」の並びを決める
+    var avgs=BIZ_DOMAINS.map(function(d){ var t=0; d.skills.forEach(function(s){ t+=cov.pct[s.key]||0; }); return {k:d.key, v:t/d.skills.length}; });
+    var rank={}; avgs.slice().sort(function(a,b){ return b.v-a.v; }).forEach(function(x,i){ rank[x.k]=i; });
+    h+='<div class="cov2" id="cov2" data-f="'+COV_FILTER+'">';
     BIZ_DOMAINS.forEach(function(d){
-      var dc=0; d.skills.forEach(function(s){ if(cov.pct[s.key]>0) dc++; });
-      h+='<div class="cov-dom"><div class="cov-dom-h"><span>'+esc(d.label)+'</span><span>'+dc+'/'+d.skills.length+'</span></div><div class="cov-cells">';
+      var dc=0, hasU=false, hasG=false;
+      d.skills.forEach(function(s){ var p=cov.pct[s.key]||0; if(p>0) dc++; if(p===0) hasU=true; if(p>0&&p<40) hasG=true; });
+      h+='<div class="cd'+(COV_OPEN[d.key]?' open':'')+(hasU?' has-unexp':'')+(hasG?' has-grow':'')+'" data-dom="'+d.key+'" style="--os:'+rank[d.key]+'">'
+        +'<button type="button" class="cd-h"><span class="cd-n">'+esc(d.label)+'</span><span class="cd-sq">';
+      d.skills.forEach(function(s){ h+='<i class="l'+covLevel(cov.pct[s.key]||0)+'"></i>'; });
+      h+='</span><span class="cd-r"><b>'+dc+'</b>/'+d.skills.length+'</span><span class="cd-c" aria-hidden="true"></span></button>'
+        +'<div class="cd-b"><div class="cov-cells">';
       d.skills.forEach(function(s){
         var p=cov.pct[s.key]||0, lv=covLevel(p);
         h+='<span class="cov-cell l'+lv+'" data-biz="'+s.key+'" title="'+esc(s.label)+' '+p+'%"><span class="cc-fill" style="width:'+p+'%"></span><span class="cc-tx">'+esc(s.label)+(p>0?' <b>'+p+'%</b>':'')+'</span></span>';
       });
-      h+='</div></div>';
+      h+='</div></div></div>';
     });
+    h+='</div>';
     h+='<div class="cov-legend">'
-      +'<span class="cov-cell l0"><span class="cc-tx">未開拓</span></span>'
-      +'<span class="cov-cell l1"><span class="cc-fill" style="width:30%"></span><span class="cc-tx">育成中</span></span>'
-      +'<span class="cov-cell l2"><span class="cc-fill" style="width:60%"></span><span class="cc-tx">中級</span></span>'
-      +'<span class="cov-cell l3"><span class="cc-fill" style="width:100%"></span><span class="cc-tx">高</span></span>'
+      +'<span class="cov-lg"><i class="l0"></i>未開拓</span><span class="cov-lg"><i class="l1"></i>育成中</span><span class="cov-lg"><i class="l2"></i>中級</span><span class="cov-lg"><i class="l3"></i>高</span>'
       +'</div>';
+    h+='<div class="cov-cap" style="text-align:center;margin:8px 0 0">分野をタップで開く／スキルをタップで読んだ本を表示（冊数でなく本のレベル×重複度で算出）</div>';
     h+='</div>';
     return h;
+  }
+  function initCoverageUI(root){
+    var cov=root.querySelector('#cov2'); if(!cov) return;
+    Array.prototype.forEach.call(root.querySelectorAll('.cd-h'),function(btn){
+      btn.onclick=function(){ var cd=btn.parentNode, k=cd.getAttribute('data-dom'); var on=cd.classList.toggle('open'); COV_OPEN[k]=on; };
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('.cov-chip'),function(c){
+      c.onclick=function(){
+        COV_FILTER=c.getAttribute('data-covf'); cov.setAttribute('data-f',COV_FILTER);
+        Array.prototype.forEach.call(root.querySelectorAll('.cov-chip'),function(x){ x.classList.toggle('on', x===c); });
+      };
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('.cs-card[data-sug]'),function(el){
+      el.onclick=function(){
+        var id=el.getAttribute('data-sug');
+        var bk=state.books.filter(function(x){ return x.id===id; })[0];
+        if(bk) openBookMenu(bk);
+      };
+    });
   }
   // Search-time preview: which skill a book covers + how much it raises the gauge
   function bizPreview(b){
@@ -1061,6 +1173,7 @@
     Array.prototype.forEach.call(body.querySelectorAll('.cov-cell[data-biz]'),function(el){
       el.onclick=function(){ openSkillDetail('biz', el.dataset.biz, done); };
     });
+    initCoverageUI(body);
     Array.prototype.forEach.call(body.querySelectorAll('[data-month]'),function(el){
       el.onclick=function(){ openSkillDetail('month', el.dataset.month, done); };
     });
@@ -1653,6 +1766,8 @@
     var step=Math.min(32, 900/Math.max(1, shown-from));
     var W=330, pitch=W/PER, bw=pitch*0.68, rowH=28, boardH=3, H=rows*(rowH+boardH+4)+2;
     var svg='<svg class="hshelf-svg" viewBox="0 0 '+W+' '+H+'" width="100%" preserveAspectRatio="xMidYMax meet" aria-hidden="true">';
+    svg+='<defs><linearGradient id="hsShineG" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#ffe08a" stop-opacity="0"/><stop offset=".42" stop-color="#fff3c4" stop-opacity=".75"/><stop offset=".5" stop-color="#ffd35c" stop-opacity=".95"/><stop offset=".58" stop-color="#fff3c4" stop-opacity=".75"/><stop offset="1" stop-color="#ffe08a" stop-opacity="0"/></linearGradient><clipPath id="hsShineClip">@@CLIP@@</clipPath></defs>';
+    var clip='';
     for(var r=0;r<rows;r++){
       var yb=H-2-(rows-1-r)*(rowH+boardH+4)-boardH;
       svg+='<rect x="0" y="'+yb+'" width="'+W+'" height="'+boardH+'" rx="1.5" fill="rgba(255,255,255,.5)"/>';
@@ -1663,10 +1778,14 @@
         var play=idx>=from;
         var delay=play?' style="animation-delay:'+Math.round(120+(idx-from)*step)+'ms"':'';
         var wave=' style="animation-delay:-'+((idx*0.13)%4.4).toFixed(2)+'s"';
-        svg+='<g class="hs-book'+(play?' hs-in':'')+'"'+delay+'><g class="hs-sway'+tilt+'"'+wave+'><rect x="'+x.toFixed(1)+'" y="'+(yb-h)+'" width="'+bw.toFixed(1)+'" height="'+h+'" rx="1.6" fill="'+cols[(idx+r*2)%6]+'" opacity="'+(last?1:.86)+'"/>'
-          +'<rect x="'+(x+bw*0.28).toFixed(1)+'" y="'+(yb-h+4)+'" width="'+(bw*0.44).toFixed(1)+'" height="2" fill="rgba(86,20,22,.28)"/></g></g>';
+        var hop=' style="animation-delay:'+(idx*0.06).toFixed(2)+'s"';
+        clip+='<rect x="'+x.toFixed(1)+'" y="'+(yb-h)+'" width="'+bw.toFixed(1)+'" height="'+h+'" rx="1.6"/>';
+        svg+='<g class="hs-book'+(play?' hs-in':'')+'"'+delay+'><g class="hs-sway'+tilt+'"'+wave+'><g class="hs-hop"'+hop+'><rect x="'+x.toFixed(1)+'" y="'+(yb-h)+'" width="'+bw.toFixed(1)+'" height="'+h+'" rx="1.6" fill="'+cols[(idx+r*2)%6]+'" opacity="'+(last?1:.86)+'"/>'
+          +'<rect x="'+(x+bw*0.28).toFixed(1)+'" y="'+(yb-h+4)+'" width="'+(bw*0.44).toFixed(1)+'" height="2" fill="rgba(86,20,22,.28)"/></g></g></g>';
       }
     }
+    if(shown>0) svg+='<g clip-path="url(#hsShineClip)"><rect class="hs-shine" x="0" y="-6" width="34" height="'+(H+12)+'" fill="url(#hsShineG)"/></g>';
+    svg=svg.replace('@@CLIP@@',clip);
     svg+='</svg>';
     var msg = n===0 ? '<div class="hshelf-empty">今年の1冊目を、ここに並べよう</div>' : '';
     return '<div class="hshelf"><div class="hshelf-head"><span>'+ic('book')+yr+'年に読んだ本</span><span class="hshelf-n"><b>'+n+'</b>冊</span></div>'
@@ -1721,12 +1840,32 @@
       +'</div>';
     var monthGauges = buildMonthGauges(computeRecentMonths(state.books, 3));
     el.innerHTML='<div class="hero-label">'+ic('calendar')+'今月読んだ本</div>'
-      +'<div class="hero-num">'+thisMonth+(goal>0?'<span class="hero-of">/ '+goal+'</span>':'')+'<small>冊</small></div>'
+      +'<div class="hero-num"><span class="hn-val">'+thisMonth+'</span>'+(goal>0?'<span class="hero-of">/ '+goal+'</span>':'')+'<small>冊</small></div>'
       +'<div class="hero-sub">'+sub+'</div>'
       +gauge
       +buildYearShelf(state.books)
       +monthGauges;
     var gb=document.getElementById("goalBtn"); if(gb) gb.onclick=openGoalSheet;
+    countUpHero(thisMonth);
+  }
+  // 今月の冊数を 0（または前回の値）から数え上げる。値が変わらない再描画ではアニメしない
+  var HERO_PREV=-1, HERO_RAF=0;
+  function countUpHero(to){
+    var el=document.querySelector("#heroStat .hn-val"); if(!el) return;
+    var from = HERO_PREV<0 ? 0 : HERO_PREV;
+    var same = (to===HERO_PREV); HERO_PREV=to;
+    try{ if(HERO_RAF) cancelAnimationFrame(HERO_RAF); }catch(e){}
+    var reduce=false; try{ reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){}
+    if(same || reduce || from===to || to<=0){ el.textContent=to; return; }
+    var t0=null, dur=Math.min(1100, 450+Math.abs(to-from)*70);
+    el.textContent=from;
+    function tick(ts){
+      if(t0===null) t0=ts;
+      var k=Math.min(1,(ts-t0)/dur), e=1-Math.pow(1-k,3);
+      el.textContent=Math.round(from+(to-from)*e);
+      if(k<1) HERO_RAF=requestAnimationFrame(tick); else el.textContent=to;
+    }
+    HERO_RAF=requestAnimationFrame(tick);
   }
   function openGoalSheet(){
     var cur=loadGoal(), val=cur>0?cur:3;
@@ -2190,6 +2329,92 @@
     };
   }
 
+  /* ---------- 全部の表紙を取り直す ---------- */
+  function loadImgOk(url){
+    return new Promise(function(res){
+      var im=new Image(), done=false;
+      function fin(v){ if(done) return; done=true; clearTimeout(t); im.onload=im.onerror=null; res(v); }
+      var t=setTimeout(function(){ fin(false); },9000);
+      im.referrerPolicy="no-referrer";
+      im.onload=function(){ fin(im.naturalWidth>1 && im.naturalHeight>1); };
+      im.onerror=function(){ fin(false); };
+      im.src=url;
+    });
+  }
+  // 追加時・表示時と同じ優先順で、ISBN一致／タイトル近似のものだけを採用して表紙URLを返す（見つからなければ ""）
+  function resolveCoverUrl(b){
+    var isbn=(b.isbn||"").replace(/[^0-9Xx]/g,"");
+    var steps=[];
+    if(isbn){
+      steps.push(function(){ return fetchOpenBD(isbn).then(function(o){ return (o&&o.cover)||""; }); });
+      steps.push(function(){ return fetchGoogleByIsbn(isbn).then(function(o){ return (o&&o.cover&&o.isbnMatch)?o.cover:""; }); });
+    }
+    if(b.title){
+      steps.push(function(){ return fetchGoogleByTitle(b.title,b.author).then(function(o){ return (o&&o.cover)||""; }); });
+    }
+    if(isbn){ steps.push(function(){ return Promise.resolve("https://covers.openlibrary.org/b/isbn/"+isbn+"-M.jpg?default=false"); }); }
+    var i=0;
+    function nextStep(){
+      if(i>=steps.length) return Promise.resolve("");
+      var st=steps[i++];
+      return st().catch(function(){ return ""; }).then(function(url){
+        if(!url) return nextStep();
+        return loadImgOk(url).then(function(ok){ return ok ? url : nextStep(); });
+      });
+    }
+    return nextStep();
+  }
+  function openCoverRefreshSheet(){
+    var targets=state.books.filter(function(b){ return (b.isbn||"").replace(/[^0-9Xx]/g,"") || b.title; });
+    var h='<div class="grip"></div><h2>'+ic('refresh')+'表紙をまとめて取り直す</h2>'
+      +'<div class="cr-note">登録している'+targets.length+'冊すべての表紙を、ISBN一致の表紙で取り直します。新しい表紙が見つからない本は、今の表紙のままにします。通信が多いので、Wi-Fiで画面を開いたままお待ちください（目安：100冊で1〜2分）。</div>'
+      +'<div id="crBox"></div>'
+      +'<button class="btn primary" id="crStart">取り直しを始める</button>'
+      +'<button class="btn ghost" id="crClose">閉じる</button>';
+    openSheet(h);
+    var running=false, stop=false;
+    document.getElementById("crClose").onclick=function(){ stop=true; closeSheet(); if(running) render(); };
+    document.getElementById("crStart").onclick=function(){
+      if(running) return; running=true; stop=false;
+      var box=document.getElementById("crBox"), startBtn=document.getElementById("crStart");
+      startBtn.textContent="中止する"; startBtn.className="btn danger";
+      startBtn.onclick=function(){ stop=true; startBtn.disabled=true; startBtn.textContent="中止しています…"; };
+      box.innerHTML='<div class="cr-track"><i class="cr-fill" id="crFill"></i></div><div class="cr-stat"><span id="crPos">0 / '+targets.length+'</span><span id="crSum"></span></div>';
+      var idx=0, changed=0, same=0, miss=0;
+      function paint(){
+        var f=document.getElementById("crFill"); if(!f){ stop=true; return; }
+        f.style.width=(targets.length?idx/targets.length*100:100).toFixed(1)+"%";
+        document.getElementById("crPos").textContent=idx+" / "+targets.length;
+        document.getElementById("crSum").textContent="更新 "+changed+"・変更なし "+same+"・見つからず "+miss;
+      }
+      function finish(){
+        running=false; save(); coverSessionCache={};
+        var cancelled = idx<targets.length;
+        var f=document.getElementById("crFill");
+        if(f){
+          box.insertAdjacentHTML("beforeend",'<div class="cr-note" style="margin-top:10px">'+(cancelled?'途中で中止しました。':'完了しました。')+changed+'冊の表紙を更新しました。</div>');
+          startBtn.disabled=false; startBtn.textContent="閉じて一覧を見る"; startBtn.className="btn primary";
+          startBtn.onclick=function(){ closeSheet(); };
+          document.getElementById("crClose").style.display="none";
+        }
+        render();
+        if(!f) toast(changed+"冊の表紙を更新しました");
+      }
+      function step(){
+        if(stop || idx>=targets.length){ finish(); return; }
+        var b=targets[idx];
+        resolveCoverUrl(b).then(function(url){
+          if(url){ if(url!==b.cover){ b.cover=url; changed++; } else same++; }
+          else miss++;
+        }).catch(function(){ miss++; }).then(function(){
+          idx++; if(idx%10===0) save(); paint();
+          setTimeout(step, 120);
+        });
+      }
+      paint(); step();
+    };
+  }
+
   /* ---------- Add sheet: camera + title/ISBN search ---------- */
   function openAddSheet(focusSearch, prefillIsbn){
     var h='<div class="grip"></div><h2>本を追加</h2>';
@@ -2202,7 +2427,9 @@
     h+='<button class="btn ghost" id="cancelBtn">閉じる</button>';
     h+='<div style="text-align:center;margin-top:6px"><a href="#" id="keyLink" style="font-size:12px;color:var(--muted);text-decoration:underline">検索がうまくいかない時（APIキー設定）</a></div>';
     h+='<div style="text-align:center;margin-top:4px"><a href="#" id="aiLink" style="font-size:12px;color:var(--muted);text-decoration:underline">'+ic("sparkles")+'AIで内容から自動分類（Gemini APIキー）</a></div>';
+    h+='<div style="text-align:center;margin-top:4px"><a href="#" id="crLink" style="font-size:12px;color:var(--muted);text-decoration:underline">'+ic("refresh")+'全部の表紙を取り直す</a></div>';
     openSheet(h);
+    document.getElementById("crLink").onclick=function(e){ e.preventDefault(); openCoverRefreshSheet(); };
     var inp=document.getElementById("qInput");
     document.getElementById("camBtn").onclick=function(){ closeSheet(); startScan(); };
     document.getElementById("cancelBtn").onclick=closeSheet;
