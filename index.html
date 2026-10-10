@@ -32,8 +32,16 @@
     background:var(--bg);
     padding:calc(12px + env(safe-area-inset-top)) 16px 0;
   }
+  .ic{width:1.1em;height:1.1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.2em;margin-right:.3em;flex:none}
+  .x .ic,.empty .ic,.cover.ph .ic,.skillbtn .ic{margin-right:0}
+  .skillbtn .ic{margin-right:.3em}
+  .empty .big .ic{width:44px;height:44px;margin:0}
+  .cover.ph .ic{width:30px;height:30px}
+  .hbar-btn .ic:last-child:not(:first-child){margin:0 0 0 .3em}
+  .data-footer a .ic{margin-right:.25em}
   .brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-  .brand .logo{font-size:22px}
+  .brand .logo{width:34px;height:34px;border-radius:10px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+  .brand .logo svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .brand h1{font-size:19px;margin:0;font-weight:800;letter-spacing:.02em}
   .brand .total{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600;text-align:right;line-height:1.25}
   .brand .total b{font-size:13px;color:var(--accent-dk);font-weight:800}
@@ -63,6 +71,32 @@
   .hero-gauge-ring-center b{font-size:15px;font-weight:800;line-height:1.1}
   .hero-gauge-ring-center span{font-size:9.5px;opacity:.85;margin-top:0}
   .hero-gauge-label{margin-top:5px;font-size:11px;font-weight:700;opacity:.92;text-align:center}
+  .hbar{position:relative;margin-top:12px;text-align:left}
+  .hbar-head{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:800}
+  .hbar-val{font-size:12px;font-weight:700}
+  .hbar-val b{font-size:26px;font-weight:900;line-height:1;margin-right:1px}
+  .hbar-track{height:12px;border-radius:999px;background:rgba(255,255,255,.25);margin:6px 0 6px;overflow:hidden}
+  .hbar-fill{display:block;height:100%;background:#fff;border-radius:999px;transition:width .7s cubic-bezier(.34,1.2,.4,1)}
+  .hbar-foot{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;opacity:.95;min-height:22px}
+  .hbar-btn{border:none;cursor:pointer;font-family:inherit;color:#fff;font-size:11px;font-weight:800;background:rgba(255,255,255,.18);
+    padding:4px 11px;border-radius:999px;-webkit-tap-highlight-color:transparent}
+  .hbar-btn:active{background:rgba(255,255,255,.3)}
+  .hbar-btn.done{background:rgba(255,255,255,.92);color:var(--accent-dk)}
+  .hchip{font-size:11px;font-weight:700;background:rgba(255,255,255,.16);padding:5px 11px;border-radius:999px;color:#fff}
+  .hchip.cur{background:#fff;color:var(--accent-dk)}
+  .hshelf{position:relative;margin-top:10px;text-align:left}
+  .hshelf-head{display:flex;justify-content:space-between;align-items:baseline;font-size:11.5px;font-weight:800;margin-bottom:4px}
+  .hshelf-n{font-size:11px;font-weight:700}.hshelf-n b{font-size:18px;font-weight:900;margin-right:1px}
+  .hshelf-body{position:relative}
+  .hshelf-svg{display:block;overflow:visible}
+  .hshelf-empty{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:11px;font-weight:700;opacity:.85}
+  .hs-book{transform-box:fill-box;transform-origin:50% 100%}
+  .hs-in{animation:hsDrop .5s cubic-bezier(.34,1.4,.5,1) both}
+  .hs-last{animation:hsSway 3.4s ease-in-out infinite}
+  @keyframes hsDrop{0%{opacity:0;transform:translateY(-14px)}100%{opacity:1;transform:translateY(0)}}
+  @keyframes hsSway{0%,100%{transform:rotate(0)}50%{transform:rotate(6deg)}}
+  .hs-in.hs-last{animation:hsDrop .5s cubic-bezier(.34,1.4,.5,1) both, hsSway 3.4s ease-in-out .9s infinite}
+  @media (prefers-reduced-motion: reduce){ .hs-in,.hs-last,.hs-in.hs-last{animation:none} }
   .hero-goal-btn{margin-top:6px;border:none;cursor:pointer;font-family:inherit;color:#fff;font-size:11px;font-weight:800;
     background:rgba(255,255,255,.18);padding:5px 12px;border-radius:999px;-webkit-tap-highlight-color:transparent}
   .hero-goal-btn:active{background:rgba(255,255,255,.3)}
@@ -77,7 +111,7 @@
   .goal-chip{border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:8px 0;flex:1 1 0;min-width:0;max-width:56px;text-align:center;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
   .goal-chip.cur{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-dk)}
   .goal-note{text-align:center;font-size:12px;color:var(--muted);margin:8px 0 2px}
-  .hero-year-gauges{position:relative;display:flex;justify-content:center;gap:14px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.25);flex-wrap:wrap}
+  .hero-year-gauges{position:relative;display:flex;justify-content:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.25);flex-wrap:wrap}
   .hero-year-gauge{display:flex;flex-direction:column;align-items:center}
   .hyg-ring-wrap{position:relative;width:48px;height:48px}
   .hyg-ring-wrap svg{transform:rotate(-90deg)}
@@ -234,7 +268,7 @@
   .badge{position:absolute;left:9px;top:9px;width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.85)}
 
   .empty{
-    text-align:center;color:var(--muted);padding:56px 20px;
+    grid-column:1/-1;text-align:center;color:var(--muted);padding:56px 20px;
   }
   .empty .big{font-size:44px;opacity:.5;margin-bottom:8px}
   .empty p{margin:4px 0;font-size:14px}
@@ -403,10 +437,10 @@
 <body>
 <header class="app">
   <div class="brand">
-    <span class="logo">📚</span>
+    <span class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5.5C4.5 4.2 8 4.2 12 6c4-1.8 7.5-1.8 10-.5V19c-2.5-1.3-6-1.3-10 .5-4-1.8-7.5-1.8-10-.5z"/><path d="M12 6v13.5"/></svg></span>
     <h1>Booskill</h1>
     <span class="total" id="totalCount"></span>
-    <button class="skillbtn" id="skillBtn">📊 スキル</button>
+    <button class="skillbtn" id="skillBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>スキル</button>
   </div>
 </header>
 <nav class="tabs" id="tabs" role="tablist" aria-label="本棚">
@@ -430,7 +464,7 @@
   <div id="monthlyBox" style="display:none"></div>
   <div class="grid" id="list"></div>
   <div class="data-footer" id="dataFooter">
-    データ：<a href="#" id="importLinkMain">📥 取り込み（インポート）</a> ／ <a href="#" id="exportLinkMain">📤 書き出し（バックアップ）</a>
+    データ：<a href="#" id="importLinkMain"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M4 20h16"/></svg>取り込み（インポート）</a> ／ <a href="#" id="exportLinkMain"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5M7 9l5-5 5 5M4 20h16"/></svg>書き出し（バックアップ）</a>
     <input id="importFileMain" type="file" accept=".json,application/json" style="display:none">
   </div>
   <div id="skillPage" style="display:none"></div>
@@ -452,8 +486,8 @@
   <video id="video" playsinline muted></video>
   <div class="scan-ui">
     <div class="scan-top">
-      <span class="st">📷 ISBNをスキャン</span>
-      <button class="x" id="scanClose" aria-label="閉じる">✕</button>
+      <span class="st"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>ISBNをスキャン</span>
+      <button class="x" id="scanClose" aria-label="閉じる"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div class="reticle-wrap"><div class="reticle"><div class="laser"></div></div></div>
     <div class="scan-hint" id="scanHint">本の裏表紙にある978から始まるバーコードを枠に合わせてください</div>
@@ -476,11 +510,33 @@
 "use strict";
 (function(){
   var STORE_KEY = "dokusho_books_v1";
+  var ICONS={
+    book:'<path d="M2 5.5C4.5 4.2 8 4.2 12 6c4-1.8 7.5-1.8 10-.5V19c-2.5-1.3-6-1.3-10 .5-4-1.8-7.5-1.8-10-.5z"/><path d="M12 6v13.5"/>',
+    bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',
+    stack:'<path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5L12 21l9-4.5"/>',
+    check:'<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
+    chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8" fill="currentColor"/>',
+    pencil:'<path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16z"/><path d="M14 7l3 3"/>',
+    trendUp:'<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>',
+    trendDown:'<path d="M3 7l6 6 4-4 8 8M15 17h6v-6"/>',
+    arrowRight:'<path d="M4 12h16M15 7l5 5-5 5"/>',
+    flag:'<path d="M5 21V4M5 4h12l-2 4 2 4H5"/>',
+    download:'<path d="M12 4v11M7 11l5 5 5-5M4 20h16"/>',
+    upload:'<path d="M12 16V5M7 9l5-5 5 5M4 20h16"/>',
+    camera:'<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/>',
+    x:'<path d="M6 6l12 12M18 6L6 18"/>',
+    alert:'<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.2v.1"/>',
+    sparkles:'<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
+    map:'<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>'
+  };
+  function ic(n){ return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||'')+'</svg>'; }
   var STATUSES = [
-    {key:"want",    label:"読みたい本", color:getVar("--want"),    icon:"🔖"},
-    {key:"stack",   label:"積読本",     color:getVar("--stack"),   icon:"📥"},
-    {key:"reading", label:"読んでる本", color:getVar("--reading"), icon:"📖"},
-    {key:"done",    label:"読んだ本",   color:getVar("--done"),    icon:"✅"}
+    {key:"want",    label:"読みたい本", color:getVar("--want"),    icon:ic("bookmark")},
+    {key:"stack",   label:"積読本",     color:getVar("--stack"),   icon:ic("stack")},
+    {key:"reading", label:"読んでる本", color:getVar("--reading"), icon:ic("book")},
+    {key:"done",    label:"読んだ本",   color:getVar("--done"),    icon:ic("check")}
   ];
   function getVar(n){try{return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}catch(e){return "#999";}}
   function hexToRgba(hex, a){
@@ -778,7 +834,7 @@
   function covLevel(p){ return p>=80?3:(p>=40?2:(p>0?1:0)); }
   function buildCoverageHTML(cov){
     var rate=cov.total?Math.round(cov.covered/cov.total*100):0;
-    var h='<div class="cov-wrap"><div class="cov-head"><span class="cov-title">🗺 ビジネススキル カバレッジ</span><span class="cov-rate">開拓 '+cov.covered+'/'+cov.total+'・平均 '+cov.avg+'%</span></div>';
+    var h='<div class="cov-wrap"><div class="cov-head"><span class="cov-title">'+ic("map")+'ビジネススキル カバレッジ</span><span class="cov-rate">開拓 '+cov.covered+'/'+cov.total+'・平均 '+cov.avg+'%</span></div>';
     h+='<div class="cov-bar"><div style="width:'+rate+'%"></div></div>';
     h+='<div class="cov-cap">冊数でなく本のレベル×重複度でゲージ算出（16分野'+BIZ_FLAT.length+'スキル／グロービス体系を参考）</div>';
     BIZ_DOMAINS.forEach(function(d){
@@ -804,12 +860,12 @@
     var k=mapToBizSkill(b), lvl=bookLevel(b);
     if(!k){
       var g=classifyBook(b); var gl=(SKILLS.filter(function(s){return s.key===g;})[0]||{}).label||'教養';
-      return '<div class="sk-prev out">📊 ビジネススキルの該当なし　ジャンル: <b>'+esc(gl)+'</b>（レベル '+lvl.name+'）</div>';
+      return '<div class="sk-prev out">'+ic('chart')+'ビジネススキルの該当なし　ジャンル: <b>'+esc(gl)+'</b>（レベル '+lvl.name+'）</div>';
     }
     var sLabel='', dLabel='';
     BIZ_DOMAINS.forEach(function(d){ d.skills.forEach(function(s){ if(s.key===k){ sLabel=s.label; dLabel=d.label; } }); });
     var done=state.books.filter(function(x){ return x.status==='done' && (x.bizskill||mapToBizSkill(x))===k; });
-    var head='<div class="sk-prev-t">📊 学べるスキル：'+esc(dLabel)+' ＞ '+esc(sLabel)+'</div>';
+    var head='<div class="sk-prev-t">'+ic('chart')+'学べるスキル：'+esc(dLabel)+' ＞ '+esc(sLabel)+'</div>';
     if(b.status==='done'){
       var cur=skillPctFromBooks(done);
       return '<div class="sk-prev">'+head+'<div class="sk-prev-m">レベル <b>'+lvl.name+'</b>　このスキルの現在地 <b>'+cur+'%</b>（この本も貢献中）</div></div>';
@@ -981,7 +1037,7 @@
     h+='<div><span class="sk-big" style="font-size:17px">'+esc(top.short)+'</span><span class="sk-cap">一番の強み</span></div>';
     h+='<div><span class="sk-big">'+filled+'<span style="font-size:14px">/'+SKILLS.length+'</span></span><span class="sk-cap">分野を開拓</span></div></div>';
     h+='<div class="sk-radar">'+buildRadar(r.pct)+'</div>';
-    h+='<div class="cov-wrap"><div class="cov-head"><span class="cov-title">📅 月別 読了冊数</span><span class="cov-rate">直近12か月</span></div>';
+    h+='<div class="cov-wrap"><div class="cov-head"><span class="cov-title">'+ic("calendar")+'月別 読了冊数</span><span class="cov-rate">直近12か月</span></div>';
     h+=buildMonthlyChart(computeMonthly(done, 12));
     h+='</div>';
     h+='<div class="sk-bars">';
@@ -996,7 +1052,7 @@
     });
     h+='</div>';
     h+=buildCoverageHTML(computeBizCoverage(done));
-    h+='<div class="sk-note">'+(geminiKey()?'🤖 AIが本の内容（あらすじ）を読んで分類しています。':'分野は本のタイトル・内容から自動判定。🤖 AIキーを設定すると内容を読んでより正確に分類します（本を追加→🤖AIで自動分類）。')+'読んだ本が増えるほどゲージが伸びます。</div>';
+    h+='<div class="sk-note">'+(geminiKey()?ic('sparkles')+'AIが本の内容（あらすじ）を読んで分類しています。':'分野は本のタイトル・内容から自動判定。AIキーを設定すると内容を読んでより正確に分類します（本を追加→AIで自動分類）。')+'読んだ本が増えるほどゲージが伸びます。</div>';
     body.innerHTML=h;
     Array.prototype.forEach.call(body.querySelectorAll('.skbar[data-genre]'),function(el){
       el.onclick=function(){ openSkillDetail('genre', el.dataset.genre, done); };
@@ -1062,12 +1118,12 @@
     var sp=document.getElementById('skillPage'); if(sp) sp.style.display = skill?'block':'none';
     var sd=document.getElementById('skillDetailPage'); if(sd) sd.style.display = detail?'block':'none';
     var fab=document.getElementById('fab'); if(fab) fab.style.display = away?'none':'';
-    var sb=document.getElementById('skillBtn'); if(sb) sb.textContent = away?'← 本棚に戻る':'📊 スキル';
+    var sb=document.getElementById('skillBtn'); if(sb) sb.innerHTML = away?'← 本棚に戻る':ic('chart')+'スキル';
   }
   function openSkillSheet(){
     state.view='skill'; applyViewMode();
     var page=document.getElementById('skillPage');
-    page.innerHTML='<h2 class="skill-title">📊 あなたの読書スキル<span id="skillRefreshing" class="sk-refresh-badge"></span></h2><div id="skillBody"></div>';
+    page.innerHTML='<h2 class="skill-title">'+ic("chart")+'あなたの読書スキル<span id="skillRefreshing" class="sk-refresh-badge"></span></h2><div id="skillBody"></div>';
     try{ window.scrollTo(0,0); }catch(e){}
     var done=state.books.filter(function(b){return b.status==='done';});
     // Render immediately from whatever's already cached (catz/desc/aiGenre) -- classifyBook()
@@ -1467,7 +1523,7 @@
     if(mb){
       if(state.tab==="done"){
         mb.style.display="block";
-        mb.innerHTML='<div class="cov-wrap mo-top"><div class="cov-head"><span class="cov-title">📅 月別 読了冊数</span><span class="cov-rate">直近12か月</span></div>'
+        mb.innerHTML='<div class="cov-wrap mo-top"><div class="cov-head"><span class="cov-title">'+ic("calendar")+'月別 読了冊数</span><span class="cov-rate">直近12か月</span></div>'
           +buildMonthlyChart(computeMonthly(state.books,12))+'</div>';
         Array.prototype.forEach.call(mb.querySelectorAll("[data-month]"),function(el){
           el.onclick=function(){ openSkillDetail("month", el.dataset.month); };
@@ -1491,7 +1547,7 @@
       var st=statusOf(state.tab);
       var e=document.createElement("div"); e.className="empty";
       e.innerHTML='<div class="big">'+st.icon+'</div><p><b>「'+st.label+'」はまだありません</b></p>'+
-        '<p>下の「本を追加」からISBN読み取り、またはタイトル検索で登録できます</p>';
+        '<p>右下の「＋」からISBN読み取り、またはタイトル検索で登録できます</p>';
       listEl.appendChild(e); return;
     }
     items.forEach(function(b){ listEl.appendChild(cardEl(b)); });
@@ -1551,25 +1607,39 @@
   }
   function buildMonthGauges(buckets){
     if(!buckets || !buckets.length) return "";
-    var maxc=1; buckets.forEach(function(b){ if(b.count>maxc) maxc=b.count; });
-    var R=34, C=2*Math.PI*R;
     var html = '<div class="hero-year-gauges">';
-    buckets.forEach(function(b){
-      var pct = maxc>0 ? (b.count/maxc*100) : 0;
-      var dashoffset = C*(1-pct/100);
-      html += '<div class="hero-year-gauge">'
-        + '<div class="hyg-ring-wrap">'
-          + '<svg viewBox="0 0 100 100" width="48" height="48">'
-            + '<circle class="hgr-track" cx="50" cy="50" r="'+R+'"/>'
-            + '<circle class="hgr-fill" cx="50" cy="50" r="'+R+'" style="stroke-dasharray:'+C.toFixed(1)+';stroke-dashoffset:'+dashoffset.toFixed(1)+'"/>'
-          + '</svg>'
-          + '<div class="hyg-num">'+b.count+'</div>'
-        + '</div>'
-        + '<div class="hyg-label">'+b.label+'</div>'
-        + '</div>';
+    buckets.forEach(function(b,i){
+      html += '<span class="hchip'+(i===buckets.length-1?' cur':'')+'">'+b.label+' <b>'+b.count+'冊</b></span>';
     });
     html += '</div>';
     return html;
+  }
+  var SHELF_PLAYED=false;
+  function buildYearShelf(books){
+    var yr=new Date().getFullYear(), n=0;
+    (books||[]).forEach(function(b){ if(doneYear(b)===yr) n++; });
+    var PER=24, MAXROWS=4, shown=Math.min(n, PER*MAXROWS);
+    var rows=Math.max(1, Math.ceil(shown/PER));
+    var cols=["#ffffff","#f3c9c9","#ffd9a8","#cfe3ff","#d9f0cf","#f0d4ff"];
+    var play=!SHELF_PLAYED; SHELF_PLAYED=true;
+    var W=330, pitch=W/PER, bw=pitch*0.68, rowH=34, boardH=3, H=rows*(rowH+boardH+4)+2;
+    var svg='<svg class="hshelf-svg" viewBox="0 0 '+W+' '+H+'" width="100%" preserveAspectRatio="xMidYMax meet" aria-hidden="true">';
+    for(var r=0;r<rows;r++){
+      var yb=H-2-(rows-1-r)*(rowH+boardH+4)-boardH;
+      svg+='<rect x="0" y="'+yb+'" width="'+W+'" height="'+boardH+'" rx="1.5" fill="rgba(255,255,255,.5)"/>';
+      var cnt=Math.min(PER, shown-r*PER);
+      for(var i=0;i<cnt;i++){
+        var idx=r*PER+i, h=19+((idx*37+11)%14), x=2+i*pitch+(pitch-bw)/2;
+        var last=(idx===shown-1), tilt=last?' hs-last':'';
+        var delay=play?' style="animation-delay:'+Math.min(idx*35,900)+'ms"':'';
+        svg+='<g class="hs-book'+(play?' hs-in':'')+tilt+'"'+delay+'><rect x="'+x.toFixed(1)+'" y="'+(yb-h)+'" width="'+bw.toFixed(1)+'" height="'+h+'" rx="1.6" fill="'+cols[(idx+r*2)%6]+'" opacity="'+(last?1:.86)+'"/>'
+          +'<rect x="'+(x+bw*0.28).toFixed(1)+'" y="'+(yb-h+4)+'" width="'+(bw*0.44).toFixed(1)+'" height="2" fill="rgba(86,20,22,.28)"/></g>';
+      }
+    }
+    svg+='</svg>';
+    var msg = n===0 ? '<div class="hshelf-empty">今年の1冊目を、ここに並べよう</div>' : '';
+    return '<div class="hshelf"><div class="hshelf-head"><span>'+ic('book')+yr+'年に読んだ本</span><span class="hshelf-n"><b>'+n+'</b>冊</span></div>'
+      +'<div class="hshelf-body">'+svg+msg+'</div></div>';
   }
   function nextMilestone(totalDone){
     var step = totalDone<50 ? 10 : totalDone<100 ? 25 : totalDone<500 ? 50 : 100;
@@ -1589,51 +1659,49 @@
       if(k===thisMonthKey) thisMonth++; else if(k===lastMonthKey) lastMonth++;
     });
     var diff=thisMonth-lastMonth, sub;
-    if(totalDone===0){ sub="📚 最初の1冊を読んでみましょう！"; }
+    if(totalDone===0){ sub=ic('book')+'最初の1冊を読んでみましょう！'; }
     else if(thisMonth===0){ sub = lastMonth>0 ? ("先月は"+lastMonth+"冊でした。今月も読んでいきましょう！") : "今月はまだ読了がありません"; }
-    else if(lastMonth===0){ sub="🎉 今月は"+thisMonth+"冊 読了！"; }
-    else if(diff>0){ sub="📈 先月より"+diff+"冊多いペース"; }
-    else if(diff<0){ sub="📉 先月より"+Math.abs(diff)+"冊少ないペース"; }
-    else { sub="➡️ 先月と同じペース"; }
+    else if(lastMonth===0){ sub=ic('flag')+'今月は'+thisMonth+'冊 読了！'; }
+    else if(diff>0){ sub=ic('trendUp')+'先月より'+diff+'冊多いペース'; }
+    else if(diff<0){ sub=ic('trendDown')+'先月より'+Math.abs(diff)+'冊少ないペース'; }
+    else { sub=ic('arrowRight')+'先月と同じペース'; }
     var goal=loadGoal();
-    var R=42, C=2*Math.PI*R, ringPct, centerHtml, labelHtml;
+    var barPct, headL, headR, footL, footR;
     if(goal>0){
-      ringPct=Math.max(0,Math.min(100,thisMonth/goal*100));
-      centerHtml='<b>'+thisMonth+'/'+goal+'</b><span>冊</span>';
+      barPct=Math.max(0,Math.min(100,thisMonth/goal*100));
       var remain=goal-thisMonth;
-      labelHtml = remain>0
-        ? '<button type="button" class="hero-goal-btn" id="goalBtn">🎯 今月の目標 '+goal+'冊 ・ あと'+remain+'冊 ✎</button>'
-        : '<button type="button" class="hero-goal-btn done" id="goalBtn">🎉 今月の目標 '+goal+'冊 達成！ ✎</button>';
+      headL=ic('target')+'今月の目標';
+      headR='<b>'+thisMonth+'</b> / '+goal+'冊';
+      footL = remain>0
+        ? '<button type="button" class="hbar-btn" id="goalBtn">あと'+remain+'冊で達成'+ic('pencil')+'</button>'
+        : '<button type="button" class="hbar-btn done" id="goalBtn">'+ic('check')+'目標達成！'+ic('pencil')+'</button>';
+      footR=Math.round(barPct)+'%';
     } else {
       var ms=nextMilestone(totalDone);
-      ringPct=ms.pct;
-      centerHtml='<b>あと'+ms.remain+'</b><span>冊</span>';
-      labelHtml='<div class="hero-gauge-label">累計'+totalDone+'冊・次の'+ms.next+'冊まで</div>'
-        +'<button type="button" class="hero-goal-btn" id="goalBtn">🎯 月間目標を設定</button>';
+      barPct=ms.pct;
+      headL=ic('book')+'累計の読了';
+      headR='<b>'+totalDone+'</b> / '+ms.next+'冊';
+      footL='<button type="button" class="hbar-btn" id="goalBtn">'+ic('target')+'月間目標を設定</button>';
+      footR='次の節目まであと'+ms.remain+'冊';
     }
-    var dashoffset=C*(1-ringPct/100);
-    var gauge='<div class="hero-gauge">'
-      +'<div class="hero-gauge-ring-wrap">'
-        +'<svg class="hero-gauge-ring" viewBox="0 0 100 100" width="70" height="70">'
-          +'<circle class="hgr-track" cx="50" cy="50" r="'+R+'"/>'
-          +'<circle class="hgr-fill" cx="50" cy="50" r="'+R+'" style="stroke-dasharray:'+C.toFixed(1)+';stroke-dashoffset:'+dashoffset.toFixed(1)+'"/>'
-        +'</svg>'
-        +'<div class="hero-gauge-ring-center">'+centerHtml+'</div>'
-      +'</div>'
-      +labelHtml
+    var gauge='<div class="hbar">'
+      +'<div class="hbar-head"><span>'+headL+'</span><span class="hbar-val">'+headR+'</span></div>'
+      +'<div class="hbar-track"><i class="hbar-fill" style="width:'+barPct.toFixed(1)+'%"></i></div>'
+      +'<div class="hbar-foot">'+footL+'<span>'+footR+'</span></div>'
       +'</div>';
     var monthGauges = buildMonthGauges(computeRecentMonths(state.books, 3));
     el.innerHTML='<div class="hero-num">'+thisMonth+'<small>冊</small></div>'
-      +'<div class="hero-label">🗓️ 今月読んだ本</div>'
+      +'<div class="hero-label">'+ic('calendar')+'今月読んだ本</div>'
       +'<div class="hero-sub">'+sub+'</div>'
       +gauge
+      +buildYearShelf(state.books)
       +monthGauges;
     var gb=document.getElementById("goalBtn"); if(gb) gb.onclick=openGoalSheet;
   }
   function openGoalSheet(){
     var cur=loadGoal(), val=cur>0?cur:3;
     var PRESETS=[1,2,3,4,5,8,10];
-    var h='<div class="grip"></div><h2>🎯 月間の読書目標</h2>'
+    var h='<div class="grip"></div><h2>'+ic('target')+'月間の読書目標</h2>'
       +'<div class="goal-note">1か月に読み終える冊数を決めましょう</div>'
       +'<div class="goal-stepper"><button type="button" class="goal-step-btn" id="goalMinus" aria-label="減らす">−</button>'
       +'<div class="goal-val"><span id="goalNum">'+val+'</span><small>冊</small></div>'
@@ -1734,7 +1802,7 @@
     next();
     return img;
   }
-  function phCover(cls){ var d=document.createElement("div"); d.className="cover ph"+(cls?(" "+cls):""); d.textContent="📕"; return d; }
+  function phCover(cls){ var d=document.createElement("div"); d.className="cover ph"+(cls?(" "+cls):""); d.innerHTML=ic("book"); return d; }
 
   function cardEl(b){
     var st=statusOf(b.status);
@@ -1926,7 +1994,7 @@
     h+='</div>';
     var doneEntry=lastDoneEntry(b);
     if(doneEntry){
-      h+='<div class="ddr"><span class="ddr-label">📅 読んだ日</span>'
+      h+='<div class="ddr"><span class="ddr-label">'+ic("calendar")+'読んだ日</span>'
         +'<span class="ddr-val" id="ddrVal">'+esc(fmtDate(doneEntry.at))+'</span>'
         +'<button class="ddr-edit" id="ddrEditBtn">編集</button></div>'
         +'<div class="ddr-editbox" id="ddrEditBox">'
@@ -1958,7 +2026,7 @@
       });
     }
     if(geminiKey() && (!b.aiDone || b.aiVer!==AI_VER)){
-      var sp=document.getElementById("skPrev"); if(sp){ sp.innerHTML='<div class="sk-prev out"><span class="spinner"></span> 🤖 AIが内容から判定中…</div>'; }
+      var sp=document.getElementById("skPrev"); if(sp){ sp.innerHTML='<div class="sk-prev out"><span class="spinner"></span> '+ic('sparkles')+'AIが内容から判定中…</div>'; }
       applyAI(b).then(function(){ try{save();}catch(e){} var el=document.getElementById("skPrev"); if(el) el.innerHTML=bizPreview(b); render(); });
     }
     Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-move]"),function(btn){
@@ -2011,7 +2079,7 @@
     var m=[]; if(meta.author)m.push(esc(meta.author)); if(meta.publisher)m.push(esc(meta.publisher));
     if(meta.pubdate)m.push(esc(String(meta.pubdate)));
     h+='<div class="m">'+(m.join("<br>")||("ISBN "+esc(meta.isbn||"-")))+'</div>';
-    if(existing){ var exWarn=existing.status!=="want"; h+='<span class="status-now'+(exWarn?" warn":"")+'">'+(exWarn?"⚠️ 既にお持ちです：":"登録済み：")+statusOf(existing.status).icon+' '+statusOf(existing.status).label+'</span>'; }
+    if(existing){ var exWarn=existing.status!=="want"; h+='<span class="status-now'+(exWarn?" warn":"")+'">'+(exWarn?ic("alert")+"既にお持ちです：":"登録済み：")+statusOf(existing.status).icon+' '+statusOf(existing.status).label+'</span>'; }
     h+='</div></div>';
     h+='<div id="skPrev">'+bizPreview(meta)+'</div>';
     h+='<h2>'+(existing?"棚を移動しますか？":"どの棚に入れますか？")+'</h2>';
@@ -2028,7 +2096,7 @@
     openSheet(h);
     var cov=document.querySelector("#sheet .prev .cov"); if(cov){ cov.parentNode.replaceChild(coverNode(meta),cov); }
     if(geminiKey() && !meta.aiDone){
-      var sp=document.getElementById("skPrev"); if(sp){ sp.innerHTML='<div class="sk-prev out"><span class="spinner"></span> 🤖 AIが内容から判定中…</div>'; }
+      var sp=document.getElementById("skPrev"); if(sp){ sp.innerHTML='<div class="sk-prev out"><span class="spinner"></span> '+ic('sparkles')+'AIが内容から判定中…</div>'; }
       applyAI(meta).then(function(){ var el=document.getElementById("skPrev"); if(el) el.innerHTML=bizPreview(meta); });
     }
 
@@ -2089,7 +2157,7 @@
   /* ---------- Add sheet: camera + title/ISBN search ---------- */
   function openAddSheet(focusSearch, prefillIsbn){
     var h='<div class="grip"></div><h2>本を追加</h2>';
-    h+='<button class="btn primary" id="camBtn">📷 カメラでISBNを読み取る</button>';
+    h+='<button class="btn primary" id="camBtn">'+ic('camera')+'カメラでISBNを読み取る</button>';
     h+='<div class="or"><span>または</span></div>';
     h+='<div class="field"><label>タイトル・著者・ISBNで検索</label>'+
        '<div class="search-row"><input id="qInput" placeholder="例：リーダブルコード ／ 9784..." autocomplete="off" enterkeyhint="search">'+
@@ -2097,7 +2165,7 @@
     h+='<div id="results"></div>';
     h+='<button class="btn ghost" id="cancelBtn">閉じる</button>';
     h+='<div style="text-align:center;margin-top:6px"><a href="#" id="keyLink" style="font-size:12px;color:var(--muted);text-decoration:underline">検索がうまくいかない時（APIキー設定）</a></div>';
-    h+='<div style="text-align:center;margin-top:4px"><a href="#" id="aiLink" style="font-size:12px;color:var(--muted);text-decoration:underline">🤖 AIで内容から自動分類（Gemini APIキー）</a></div>';
+    h+='<div style="text-align:center;margin-top:4px"><a href="#" id="aiLink" style="font-size:12px;color:var(--muted);text-decoration:underline">'+ic("sparkles")+'AIで内容から自動分類（Gemini APIキー）</a></div>';
     openSheet(h);
     var inp=document.getElementById("qInput");
     document.getElementById("camBtn").onclick=function(){ closeSheet(); startScan(); };
@@ -2152,7 +2220,7 @@
       }
       var ownedCount=0;
       list.forEach(function(m){ if(findExistingByIsbn(m.isbn)) ownedCount++; });
-      box.innerHTML='<div class="reslabel">'+list.length+'件の候補（タップして棚を選択）'+(ownedCount?'　⚠️ うち'+ownedCount+'件は登録済み':'')+'</div>';
+      box.innerHTML='<div class="reslabel">'+list.length+'件の候補（タップして棚を選択）'+(ownedCount?'　'+ic('alert')+'うち'+ownedCount+'件は登録済み':'')+'</div>';
       list.forEach(function(m){
         var existing=findExistingByIsbn(m.isbn);
         var row=document.createElement("div"); row.className="res"+(existing?" owned":"");
