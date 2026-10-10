@@ -621,6 +621,19 @@
     {key:'novel',    label:'文学・小説',    short:'文学',   icon:'📖', color:'#b06a4f'}
   ];
   function skillOf(k){ for(var i=0;i<SKILLS.length;i++){ if(SKILLS[i].key===k) return SKILLS[i]; } return SKILLS[6]; }
+  // Keyword match used by classifyBook/mapToBizSkill. Plain substring search (indexOf) is fine
+  // for Japanese keywords, but short ASCII keywords like "pr","ux","dx","fx","sf","lean" false-hit
+  // inside unrelated words (PRINCIPLES, Pragmatic, Clean Code, etc.) when scanned as a substring.
+  // For pure-ASCII keywords we require a word boundary on both sides; Japanese keywords (or any
+  // keyword containing non-ASCII characters) keep the original substring behaviour.
+  function kwHit(hay, kw){
+    var k = String(kw).trim().toLowerCase();
+    if(!k) return false;
+    if(/[^\x00-\x7f]/.test(k)) return hay.indexOf(k) >= 0;
+    var esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var re = new RegExp('(^|[^a-z0-9])' + esc + '($|[^a-z0-9])', 'i');
+    return re.test(' ' + hay + ' ');
+  }
   // keyword rules for the free-text (title/desc) scan; every hit is counted and the
   // category with the most hits wins (see classifyBook) -- fallback = liberal
   var SKILL_RULES=[
@@ -628,7 +641,7 @@
     {key:'money',     kw:['investing','investment','finance','financial','stock market','投資','株式','資産運用','金融','会計','税金','ファイナンス','マネー','年金','資産形成','億り','家計','nisa','ideco','投資信託','暗号資産','仮想通貨','ビットコイン','fx','節約','副収入']},
     {key:'marketing', kw:['marketing','advertising','branding','マーケティング','営業','広告','ブランディング','販促','セールス','集客','コピーライティング','sns運用','pr','ec事業','ecサイト','グロースハック','コンテンツマーケティング','広報']},
     {key:'design',    kw:['design','graphic','photograph','illustrat','typography','デザイン','クリエイティブ','写真','イラスト','建築','フォント','タイポグラフィ','ui/ux','アート','デザイン思考','プロダクトデザイン','ux','ui']},
-    {key:'novel',     kw:['fiction','novel','literature','poetry','小説','文学','物語','エッセイ','随筆','ミステリー','詩集','ノンフィクション','恋愛小説','ファンタジー','短編集','sf']},
+    {key:'novel',     kw:['fiction','novel','literature','poetry','小説','文学','物語','エッセイ','随筆','ミステリー','詩集','恋愛小説','ファンタジー','短編集','sf']},
     {key:'self',      kw:['self-help','self help','psychology','habit','motivation','mindfulness','自己啓発','習慣','心理','マインドセット','幸福','生き方','思考法','メンタル','モチベーション','人間関係','コミュニケーション','習慣化','時間管理','集中力','ライフハック']},
     {key:'business',  kw:['business','management','economics','leadership','entrepreneur','経営','ビジネス','起業','リーダーシップ','マネジメント','戦略','組織','働き方','キャリア','経済','仕事術','会社','人事','人材育成','組織開発','事業戦略']},
     {key:'liberal',   kw:['science','history','philosophy','mathematics','physics','歴史','哲学','科学','教養','数学','物理','化学','生物','政治','宗教','地理','医学','雑学','サイエンス','社会学','宇宙','脳科学','進化','人類学','考古学']}
@@ -651,7 +664,7 @@
     var hay=String(catz).toLowerCase();
     for(var i=0;i<CATEGORY_RULES.length;i++){
       var kw=CATEGORY_RULES[i].kw;
-      for(var j=0;j<kw.length;j++){ if(hay.indexOf(kw[j])>=0) return CATEGORY_RULES[i].key; }
+      for(var j=0;j<kw.length;j++){ if(kwHit(hay, kw[j])) return CATEGORY_RULES[i].key; }
     }
     return '';
   }
@@ -668,7 +681,7 @@
     var bestKey=null, bestScore=0;
     for(var i=0;i<SKILL_RULES.length;i++){
       var kw=SKILL_RULES[i].kw, cnt=0;
-      for(var j=0;j<kw.length;j++){ if(hay.indexOf(kw[j])>=0) cnt++; }
+      for(var j=0;j<kw.length;j++){ if(kwHit(hay, kw[j])) cnt++; }
       if(cnt>bestScore){ bestScore=cnt; bestKey=SKILL_RULES[i].key; }
     }
     return bestKey || 'liberal';
@@ -708,7 +721,7 @@
       {key:'mk_strategy',label:'マーケ戦略',kw:['マーケティング','marketing','stp','セグメンテーション']},
       {key:'mk_brand',   label:'ブランディング',kw:['ブランド','branding','ブランディング']},
       {key:'mk_digital', label:'デジタルマーケ',kw:['デジタルマーケ','web marketing','sns','seo','広告運用','グロースハック','コンテンツマーケ']},
-      {key:'mk_cx',      label:'顧客理解・CX',kw:['顧客体験','customer experience',' cx ','カスタマーサクセス','ユーザーインサイト','消費者行動']},
+      {key:'mk_cx',      label:'顧客理解・CX',kw:['顧客体験','customer experience','cx','カスタマーサクセス','ユーザーインサイト','消費者行動']},
       {key:'mk_pr',      label:'PR・広報',kw:['広報','パブリックリレーション','pr戦略','宣伝']},
       {key:'mk_price',   label:'価格・チャネル',kw:['価格戦略','pricing','チャネル戦略','流通']}
     ]},
@@ -723,7 +736,7 @@
     {key:'org', label:'組織・マネジメント', skills:[
       {key:'or_mgmt', label:'マネジメント',kw:['マネジメント','management','管理職','部下育成','マネジャー']},
       {key:'or_dev',  label:'組織開発',kw:['組織開発','organization','企業文化','組織文化','カルチャー','組織論']},
-      {key:'or_hr',   label:'人事・HR',kw:['人事','human resource',' hr ','採用','タレントマネジメント']},
+      {key:'or_hr',   label:'人事・HR',kw:['人事','human resource','hr','採用','タレントマネジメント']},
       {key:'or_train',label:'人材育成',kw:['人材育成','育成','コーチング','coaching','1on1','研修']},
       {key:'or_eval', label:'評価・報酬',kw:['人事評価','評価制度','報酬制度','okr','目標管理','mbo']},
       {key:'or_team', label:'チーム運営',kw:['チームビルディング','チーム運営','心理的安全性']},
@@ -763,14 +776,14 @@
       {key:'te_aiethics',label:'AI倫理・リスク',kw:['ai倫理','ai規制','責任あるai','ai governance','ディープフェイク']},
       {key:'te_ds',      label:'データサイエンス',kw:['データサイエンス','data science','データエンジニア']},
       {key:'te_prog',    label:'プログラミング',kw:['プログラミング','programming','エンジニア','python','ソフトウェア開発','コーディング','ノーコード']},
-      {key:'te_dx',      label:'DX・デジタル戦略',kw:[' dx ','dx','デジタルトランスフォーメーション','デジタル化','デジタル戦略']},
+      {key:'te_dx',      label:'DX・デジタル戦略',kw:['dx','デジタルトランスフォーメーション','デジタル化','デジタル戦略']},
       {key:'te_it',      label:'IT基礎',kw:['情報システム','itインフラ','ネットワーク','クラウド','it基礎']},
       {key:'te_sec',     label:'情報セキュリティ',kw:['情報セキュリティ','セキュリティ','security','サイバー']},
       {key:'te_prod',    label:'プロダクトマネジメント',kw:['プロダクトマネジメント','product management','プロダクトマネジャー','pdm']}
     ]},
     {key:'design', label:'デザイン', skills:[
       {key:'de_think',  label:'デザイン思考',kw:['デザイン思考','design thinking','美意識','アート思考']},
-      {key:'de_ux',     label:'UX/UI',kw:[' ux',' ui','ユーザー体験','ユーザビリティ','ux/ui']},
+      {key:'de_ux',     label:'UX/UI',kw:['ux','ui','ユーザー体験','ユーザビリティ','ux/ui']},
       {key:'de_visual', label:'ビジュアル',kw:['グラフィックデザイン','ビジュアル','タイポグラフィ','配色','レイアウト']},
       {key:'de_creative',label:'クリエイティブ',kw:['クリエイティブ','creative','アート','写真','映像']}
     ]},
@@ -778,7 +791,7 @@
       {key:'en_newbiz', label:'新規事業開発',kw:['新規事業','事業開発','business development','事業構想']},
       {key:'en_startup',label:'起業・スタートアップ',kw:['起業','startup','スタートアップ','entrepreneur']},
       {key:'en_model',  label:'ビジネスモデル',kw:['ビジネスモデル','business model','収益モデル','マネタイズ','サブスク','サブスクリプション']},
-      {key:'en_fund',   label:'資金調達',kw:['資金調達','fundraising','ベンチャーキャピタル',' vc ']},
+      {key:'en_fund',   label:'資金調達',kw:['資金調達','fundraising','ベンチャーキャピタル','vc']},
       {key:'en_innov',  label:'イノベーション',kw:['イノベーション','innovation','破壊的','両利き']},
       {key:'en_growth', label:'グロース',kw:['グロース','growth','スケール','pmf']}
     ]},
@@ -837,11 +850,16 @@
     // AIそのものが主題の本のみ AI・テクノベートへ（「AI時代」等の弱い修飾語では発動しない）
     if(hay.indexOf('生成ai')>=0||hay.indexOf('chatgpt')>=0||hay.indexOf('プロンプト')>=0||hay.indexOf('大規模言語モデル')>=0) return 'te_genai';
     if(hay.indexOf('機械学習')>=0||hay.indexOf('ディープラーニング')>=0||hay.indexOf('深層学習')>=0||hay.indexOf('machine learning')>=0||hay.indexOf('人工知能')>=0) return 'te_ml';
+    // count keyword hits per skill and take the strongest match (ties broken by BIZ_ORDER,
+    // i.e. the array order below) instead of the first keyword hit in priority order -- avoids
+    // a single incidental keyword from an unrelated skill winning over the book's true topic
+    var bestKey='', bestScore=0;
     for(var i=0;i<BIZ_FLAT.length;i++){
-      var kw=BIZ_FLAT[i].kw;
-      for(var j=0;j<kw.length;j++){ if(hay.indexOf(kw[j].toLowerCase())>=0) return BIZ_FLAT[i].key; }
+      var kw=BIZ_FLAT[i].kw, cnt=0;
+      for(var j=0;j<kw.length;j++){ if(kwHit(hay, kw[j])) cnt++; }
+      if(cnt>bestScore){ bestScore=cnt; bestKey=BIZ_FLAT[i].key; }
     }
-    return '';
+    return bestKey;
   }
   // Estimate a book's depth/level from title + description + page count
   function bookLevel(b){

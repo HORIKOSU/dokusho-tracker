@@ -1,29 +1,37 @@
 # Booskill（読書管理ツール）｜Claude Code 引き継ぎ用 CLAUDE.md
 
-最終更新：2026-10-07（月間目標機能まで反映済み）
+最終更新：2026-10-10（§8 分類精度改善：バグ修正1〜3を実装・検証・本番反映まで完了。GitHub Desktopでのpush待ち）
 公開URL：https://horikosu.github.io/dokusho-tracker/
 リポジトリ：https://github.com/HORIKOSU/dokusho-tracker（Public／GitHub Pages・main・/root）
 
 ## 1. これは何か
-- 単一ファイル `index.html`（HTML+CSS+JS、約2400行・約480KB）だけで動く読書管理ツール。ビルド工程・外部ファイルなし。
+- 単一ファイル `index.html`（HTML+CSS+JS、約2,750行・約510KB）だけで動く読書管理ツール。ビルド工程・外部ファイルなし。IIFE 1つにまとまっている。
 - データは各端末のブラウザ localStorage のみ（クラウド同期なし）。コードは公開されるが記録は他人に見えない。
 - 作業対象は基本的に **`index.html` 1ファイルのみ**。ファイル名は必ず `index.html`。
+- UIにEmoji は使わない。アイコンはすべて自前のインライン SVG（`ICONS` 辞書＋`ic(name)`、クラス `.ic`）。★/☆ だけは文字のまま。
+- ロゴは「本棚」をモチーフにした B 案（ヘッダー左の `.brand .logo`、アクセント色の角丸四角に白線の本3冊）。
 
 ## 2. ユーザーとの約束（最重要）
 - 返答・メモ・コミットメッセージは**日本語**。
-- 機能追加・デザイン変更は「実装 → ブラウザで動作確認 → スクリーンショットを見せる → ユーザーが明示的に『反映して』と言ってから本番ファイルへ反映」の順。**承認前に本番(`~/Documents/GitHub/dokusho-tracker/index.html`)を書き換えない**（作業用コピーで検証する）。
+- 機能追加・デザイン変更は「実装 → ブラウザで動作確認 → 画像（動きはGIF）で見せる → ユーザーが明示的に『反映して』と言ってから本番ファイルへ反映」の順。**承認前に本番を書き換えない**（作業用コピーで検証する）。
+- 迷う要望は、まず複数案を画像で比較して選んでもらう（「画像で見たい」が口癖）。
 - 反対意見を出されても、根拠があればすぐに意見を変えない。最新情報を前提に答える。
 - 見やすさ重視：適度に改行・余白を使って整理して回答する。
-- 新規作成ファイル名の先頭は `yymmdd_〇〇`（例：`261007_引き継ぎメモ.md`）。ただし公開用の `index.html` は例外。
+- 新規作成ファイル名の先頭は `yymmdd_〇〇`（例：`261010_引き継ぎメモ.md`）。ただし公開用の `index.html` と `CLAUDE.md` は例外。
 - スレッド名（会話タイトル）は日本語にする。
 
 ## 3. 反映・公開の流れ
-1. `index.html` を編集・検証する。
-2. 承認後、`~/Documents/GitHub/dokusho-tracker/index.html` に反映する。
-3. ユーザーが GitHub Desktop で「Commit to main」→「Push origin」（1〜2分で公開サイトに反映）。
-4. スマホで最新を見るときは URL 末尾に `?v=数字` を付けて強制読み込み。
+「反映して」と言われたら、次の3か所に**同じ内容**を出す。1か所でも漏れると、ユーザーに指摘される（過去に漏れて指摘された）。
+1. チャット（SendUserFile）。
+2. Mac の `~/Documents/GitHub/dokusho-tracker/index.html`（`device_commit_files`、`force:true`）。
+3. Projects「101.趣味開発」の `02.output/260805_読書管理ツール/index.html`（`project_write`）。クラウド側のミラー `/root/02.output/260805_読書管理ツール/index.html` も更新しておく。
+
+その後、ユーザーが GitHub Desktop で「Commit to main」→「Push origin」（1〜2分で公開サイトに反映）。
+- スマホで最新を見るときは URL 末尾に `?v=数字` を付けて強制読み込み。
 - `.git/index.lock` が残ってコミット失敗する既知問題：`rm -f .git/index.lock` →（ターミナルで add/commit）→ push は GitHub Desktop の「Push origin」を使う。
-- Cowork(Claudeデスクトップ)運用時は Projects「101.趣味開発」の `02.output/260805_読書管理ツール/index.html` にも同内容を保存していた。Claude Code に移行後は、この Projects 側コピーが古くならないよう、区切りのよいところで同期するか、移行した旨をユーザーに確認する。
+- 作業ファイルが消えたとき（コンテナ再起動など）は、Projects の `02.output/260805_読書管理ツール/index.html` を `project_read` で復元できる。
+- Claude Code に移行した後は、Projects 側コピーが古くならないよう、区切りのよいところで同期するか、ユーザーに確認する。
+- **注意（261010に判明）**：Mac側でこのツールの作業フォルダが接続されたとき、パスが `02.output/260805_読書メーター`（Projectsの記録上の名称「260805_読書管理ツール」とは末尾が異なる）だった。フォルダ内に `Claude outputs` サブフォルダがあり、ドラフト・画像・JSONの保管場所として使われている（`index-1.html`＝前回ドラフト、今回 `index-2.html` を追加）。次回このMacフォルダを参照・接続依頼するときはこの名称（`260805_読書メーター`）で呼びかけること。本番のGitHubリポジトリ直下（`~/Documents/GitHub/dokusho-tracker/`）とは別物なので混同しない。
 
 ## 4. データモデル（localStorage）
 | キー | 内容 |
@@ -32,31 +40,120 @@
 | `dokusho_sortmode_v1` | タブごとの並び替え設定 |
 | `dokusho_goal_v1` | `{monthly:N}` 月間目標冊数（1〜99、未設定は0扱い） |
 | `gb_api_key` | Google Books APIキー（任意） |
-| `gemini_api_key` / `gemini_model` | AI分類用キー（任意。使用状況は未確認） |
+| `gemini_api_key` / `gemini_model` | AI分類用キー（任意） |
 
-book の主なフィールド：`id, isbn, title, author, publisher, pubdate, cover, status('want'|'stack'|'reading'|'done'), addedAt, updatedAt, source, memo, rating, priority(1〜5・want/stackのみ), history:[{status,at}]`
+book の主なフィールド：`id, isbn, title, author, publisher, pubdate, cover, status('want'|'stack'|'reading'|'done'), addedAt, updatedAt, source, memo, rating, priority(1〜5・want/stackのみ), history:[{status,at}], catz, desc, pages, genre, bizskill`
 - `history` は最大200件。無い古いデータは `ensureHistory` が `updatedAt` から補完する。
-- 「読み終えた日」＝ history の最後の `done` エントリ（`lastDoneEntry` / `doneMonthKey(b)` → "YYYY-MM"）。月間集計・リングはこれを基準にする。
+- 「読み終えた日」＝ history の最後の `done` エントリ（`lastDoneEntry` / `doneMonthKey(b)` → "YYYY-MM" / `doneYear(b)`）。月間・年間の集計はこれを基準にする。
+- 表紙の差し替えでは `updatedAt` を触らない（並び順や読了日に影響させない）。
 
 ## 5. 画面と主な機能
-- 4つの棚：読みたい本(want)／積読本(stack)／読んでる本(reading)／読んだ本(done)。FABから本を追加（書名検索・ISBN入力・バーコード/ZXingカメラ読み取り）。
-- 検索：openBD（ISBN）＋Google Books（キー任意。429対策でキー設定導線あり）。
-- トップのヒーロー（`renderHeroStat`）：今月の読了数、先月比、中央リング、直近3か月のミニリング(`computeRecentMonths/buildMonthGauges`)。
-  - 月間目標が未設定 → 中央リングは累計マイルストーン（`nextMilestone`、「あとN冊」）＋「🎯 月間目標を設定」ボタン。
-  - 目標設定済み → 中央リングは「今月 N/目標 冊」の達成率リング、ボタンは「あとM冊」／達成時「🎉 達成！」。設定シートは `openGoalSheet()`（ー/＋ステッパー、プリセット[1,2,3,4,5,8,10]、保存、解除）。
+
+### 5-1. 全体レイアウト
+- 画面下に固定の**タブバー**（`.tabs` / `.tab`、`aria-selected`、件数バッジ `.cnt`）：読みたい本／積読本／読んでる本／読んだ本。タブバーの高さ66pxぶん、トースト・並び替えバー・body の下余白をずらしてある。
+- 本を追加する**丸いFAB**（`#fab`）はタブバーの右上（`bottom:66px+16px`）。
+- ヘッダー右に「スキル」ボタン（`#skillBtn`）。スキル画面を開くと「← 本棚に戻る」に変わる。
+- 一覧は**4列のコンパクトなグリッド**（幅600px以上は5列）。カードは padding 6px、タイトル 11px、★は高さ26px。
+
+### 5-2. ヒーロー（FV。`renderHeroStat`）
+- 上から：ラベル「今月読んだ本」→ **今月の冊数（52px・大きく）** → ひとこと（`.hero-sub`）→ 進捗バー（`.hbar`）→ 今年の本棚 → 直近3か月のチップ（`buildMonthGauges` / `.hchip` / `.cur`）。
+- 数字とゲージは統合済み。目標あり：「3 / 5冊」と大きく出し、ゲージ側は「あとN冊で達成（押すと目標編集）」と％だけ。目標なし：数字は今月の冊数、ゲージは累計マイルストーン（`nextMilestone`）＋「月間目標を設定」ボタン。
+- ひとこと：初回「最初の1冊を…」／今月0冊は「今月はまだ読了がありません」／先月比の「先月より◯冊多い・少ないペース」「先月と同じペース」。**「先月は◯冊でした」の文言は削除済み**（復活させない）。
+- 目標設定シートは `openGoalSheet()`（−/＋ステッパー、プリセット[1,2,3,4,5,8,10]、保存、解除）。
+- **数字のカウントアップ**（`countUpHero`）：開いたとき 0→今月冊数。値が変わらない再描画では動かさない（`HERO_PREV`）。
+- **今年の本棚**（`buildYearShelf`）：今年読んだ本を SVG の背表紙で表示。1段24冊×最大2段（最大48冊表示）、高さは `16+((idx*37+11)%11)`、1段の高さ28。
+  - 動きは4層：①ポンと現れる `hsPop`（初回は全冊、以降は増えた分だけ。`SHELF_PREV`）／②全冊が±4°でゆらゆら `hsWave`（4.4秒周期、本ごとに位相をずらす）／③9秒ごとに左から順にぴょこっと跳ねる `hsHop`／④金色の光が本の上をスッと走る `hsShine`（clipPath で本の形に切り抜き）。
+  - 構造：`g.hs-book > g.hs-sway > g.hs-hop > rect×2`。`prefers-reduced-motion` ではすべて停止。
+  - 「最新の1冊だけ特別な動き」は廃止（過去に最新1冊だけ動いて見えた不具合の原因だった）。全冊同じ動きにする。
+
+### 5-3. 一覧・詳細
 - 優先度★(1〜5)：want/stack のカードと詳細で入力。カード上の変更は即保存するが**その場では並び替えず**、「並び替える」確認バー(`#resortBar`)を出す。並び順は★降順→新規登録が新しい順。
-- 詳細シート（`openBookMenu`）：発売日・ISBN・履歴など。背景タップで閉じるのは click のみ。
-- スキル機能：本をジャンルに分類して7スキルのレーダー／カバレッジ表示。`classifyBook` は `CATEGORY_RULES`（Google Books のカテゴリ）→ `SKILL_RULES` のキーワード得点の順で、毎回その場で再計算（キャッシュ非依存）。
+- 詳細シート（`openBookMenu`）：発売日・ISBN・履歴など。背景タップで閉じるのは click のみ。「表紙を再取得」ボタンあり。
+
+### 5-4. 表紙の解決（`coverNode` / `resolveCoverUrl`）
+- 順番：保存済みの表紙 → openBD → Google Books（ISBN。**ISBN一致のときだけ採用**＝`isbnMatch`／`allIsbn13s`）→ Google Books（タイトル。**タイトルが近いものだけ採用**＝`titleLooksSame`）→ Open Library → プレースホルダー。
+- 別ソースで取れた表紙は、その本に保存して次回から使う。セッション内キャッシュは `coverSessionCache`。
+- **すでに保存された間違った表紙は自動では直らない**。直す方法は2つ：詳細の「表紙を再取得」（1冊ずつ）／**「全部の表紙を取り直す」**（`openCoverRefreshSheet`。「本を追加」シート最下部のリンクから開く。1冊ずつ順番に処理、進捗バー・更新/変更なし/見つからず・中止あり。新しい表紙が見つからない本は今の表紙を残す。10冊ごとに保存）。
+- 453冊規模では通信が多い。429対策として Google Books は `gbFetch` のリミッタ経由。
+
+### 5-5. 検索・追加
+- 書名検索・ISBN入力・バーコード/ZXingカメラ読み取り。openBD（ISBN）＋Google Books（キー任意。429対策でキー設定導線あり）。
+- 「本を追加」シート下部に：APIキー設定／AI自動分類（Gemini）／全部の表紙を取り直す、のリンク。
+
+### 5-6. スキル画面（`openSkillSheet`）
+- 上から：読了冊数・一番の強み・開拓分野 → レーダー（7ジャンル）→ 月別読了冊数（直近12か月）→ ジャンル別バー（タップで読んだ本）→ **次に伸ばすなら** → **ビジネススキル カバレッジ**。
+- ジャンル分類 `classifyBook`：`CATEGORY_RULES`（Google Booksのカテゴリ）→ `SKILL_RULES` のキーワード得点の順で、毎回その場で再計算。
+- **次に伸ばすなら**（`computeSuggestions`）：積読・読みたい本の中から、読了でゲージが一番上がる本をスキル別に1冊ずつ選び、伸びしろ順にTOP3。カードをタップすると `openBookMenu`。候補がない場合は案内文。
+- **カバレッジマップ**（`buildCoverageHTML`）：16分野・94スキル（`BIZ_DOMAINS`）。
+  - 分野ごとに折りたたみ（`.cd`、開閉状態は `COV_OPEN`）。ヘッダーに分野名・色マス・開拓数、タップで中のスキルが開く。スキルをタップすると読んだ本の一覧（`openSkillDetail`）。
+  - 絞り込みチップ：すべて／未開拓／育成中／強い順（`COV_FILTER`。CSSだけで切り替え。未開拓・育成中は該当スキルを自動で開く。強い順は分野の平均％で並べ替え）。
+  - レベル：`covLevel` 0=未開拓、1=〜39%、2=40〜79%、3=80%以上。レベル3のセルは文字が白。
+  - ゲージ％は冊数でなく「本のレベル×重複度」（`bookLevel` / `skillPctFromBooks`）。
 - データ：JSONの書き出し／読み込み（`exportBooks/importBooks`、ISBN重複はスキップ）。
 
 ## 6. 開発・検証のしかた
 - 共有シート：`openSheet(html)` / `closeSheet()`（`#overlay` / `#sheet` を共用）。
 - デバッグ用に `window.__dokusho` に主要関数・state が公開されている。
-- 検証は Playwright で、`localStorage` に `{v:1,books:[…]}` を投入して `reload` → 画面・DOM テキストを確認する方式が使いやすい（モバイル幅 400×820 程度）。
+- 検証は Playwright で、`localStorage` に `{v:1,books:[…]}` を投入して `reload` → 画面・DOM テキストを確認する方式が使いやすい（モバイル幅 390×800 程度、`device_scale_factor` 1.5〜2）。動きは複数フレームを撮って GIF にして見せる。
+- 分類ロジックだけを検証するときは、`window.__dokusho.classifyBook({title})` / `mapToBizSkill({title})` を Playwright 経由で直接呼び、`03.memo/261010_分類精度テスト_88冊.json` と突き合わせる（UIを開かず関数呼び出しだけで済むので速い）。
+- 外部通信は `page.route` で潰すかモックする（CORSは `access-control-allow-origin:*` を付けて返す）。表紙取得のテストはモックAPIで行う。
 - サンドボックスでは Google Fonts（M PLUS Rounded 1c）が読み込めずフォントがフォールバックする。実サイトでは問題なし。外部通信エラー（フォント）はコンソールに出ても無視してよい。
-- 検証用の一時ファイルは作業フォルダ外（/tmp 等）に置き、リポジトリに混ぜない。
+- WebFetch が失敗した外部 URL は curl/Python で取りに行かない（規則）。
+- 検証用の一時ファイルは作業フォルダ外（/tmp 等）に置き、終わったら消す。リポジトリに混ぜない。
+- 文字列置換で直すときは、置換前に `count==1` を assert する（同じ文字列が複数あると意図しない箇所を壊すため）。
 
 ## 7. 現在の状態
-- 反映済み・公開待ち：月間目標機能（`dokusho_goal_v1`）。GitHub Desktop で Commit→Push が済んでいるかユーザーに確認すること。
-- 直近の完了項目：タップで閉じる挙動の修正／カード星の控えめ表示／並び替え確認バー／詳細の★視認性／ジャンル分類の精度向上／★5段階化／発売日・ISBN表示／ヒーローのコンパクト化／今月読了数＋先月比／直近3か月リング／月間目標。
-- 未着手の要望は現時点でなし（次はユーザーの指示を待つ）。
+- 直近の反映：ヒーローの数字とゲージの統合、「先月は〜でした」削除、本の形「中間」、ゆらゆら（全冊）、ぴょこっ＋キラッ＋カウントアップ、カバレッジマップ刷新（折りたたみ＋次に伸ばすなら＋絞り込み）、全部の表紙を取り直す、表紙の取り違え防止、下タブ・丸FAB、SVGアイコン化、4列グリッド、ロゴB案。
+- **分類精度改善（§8-2のバグ修正1〜3）は261010に本番反映済み**。チャット・Mac（`~/Documents/GitHub/dokusho-tracker/index.html`・`CLAUDE.md`）・Projects（`02.output/260805_読書管理ツール/index.html`＋クラウドミラー）の3か所とも更新済み。あとはユーザーがGitHub Desktopで「Commit to main」→「Push origin」すれば公開サイトに反映される（**未実施・要確認**）。
+- GitHub Desktop での Commit→Push が済んでいるかは、ユーザーに確認すること。リポジトリには `CLAUDE.md` も入っている。公開リポジトリに載せたくなければ Commit 対象から外してもらう（確認済みの懸念として伝えてある）。
+- 未実施の候補（要望はまだ出ていない）：「先月より◯冊少ないペース」の吹き出しを消すか、タップで本が跳ねる（ぽよん）、目標達成時の紙吹雪、背景の丸をふわふわ動かす。
+
+## 8. 分類精度の改善（ジャンル・ビジネススキル判定）
+
+### 8-1. 現状の精度（実測・タイトルのみ・261010時点のベースライン）
+- 方法：有名な本88冊（ビジネス・教養・IT・自己啓発・小説）を**書名だけ**で `classifyBook({title})` と `mapToBizSkill({title})` に通して比較（`window.__dokusho` 経由・Playwright）。正解ラベルは Claude の主観。テストデータは `03.memo/261010_分類精度テスト_88冊.json`。
+- ベースライン結果：ジャンル（8分類）34%（30/88）、ビジネススキル（94スキル）49%（38/78・うち33冊は「判定なし」）、小説は0/10（すべて「教養」に落ちる＝最後の受け皿が `liberal`）。
+- 注意：実アプリでは Google Books の説明文・カテゴリ（`catz`/`desc`）も使うため、これは**下限に近い値**。ユーザーの実データ（453冊）での実測は**まだ**。
+
+### 8-2. 見つかった不具合（コードで確認済み）
+1. 短い英字キーワード（`pr`,`ui`,`ux`,`dx`,`sf`,`fx`、スキル側の `lean`）が単語の一部にも当たる。例：PRINCIPLES／Pragmatic Programmer→マーケ、Building a StoryBrand→デザイン、Clean Code→業務改善（`lean` が `clean` に当たる）。
+2. `SKILL_RULES` の novel に `ノンフィクション` が入っている（小説ではない）。
+3. ビジネススキル（`mapToBizSkill`）は BIZ_FLAT の順に**最初に当たったキーワード**で決まる（ジャンルの `classifyBook` は得点制）。
+4. `ensureDesc` は ISBN が無いと書名検索の1件目の説明文を使う（表紙と同じ取り違えのリスク）。ISBN 一致のときだけ使うべき。**→未着手**
+5. 難易度（`bookLevel`）の `教科書`・`実践`・`図鑑` は入門書にも付く語（専門扱いになりうる。未実測）。**→未着手**
+6. 判定結果を**手動で直す手段がない**（`bizskill`/`genre` をユーザーが設定する処理が無い）。**→未着手**（8-4③）
+
+### 8-3. 261010に実装・検証した内容（不具合1〜3の修正）
+- `kwHit(hay, kw)` を新設：キーワードが ASCII のみ（英数字）のときは単語境界つき正規表現でマッチ、日本語を含むキーワードは従来通り部分一致。`classifyByCategory`／`classifyBook`（SKILL_RULES）／`mapToBizSkill`（BIZ_FLAT）の3か所をこの関数に統一。これで「Clean Code」が `lean`、「PRINCIPLES」が `pr` 等に誤爆しなくなった。
+- `SKILL_RULES` の novel から `ノンフィクション` を削除。
+- `mapToBizSkill` を `classifyBook` と同じ「キーワード得点が一番高いスキルを採用（同点はBIZ_FLAT優先順）」方式に変更（旧：最初に当たったキーワードで即決定）。あわせて `mk_cx`/`or_hr`/`te_dx`/`de_ux`/`en_fund` の冗長なスペース区切りキーワードを `kwHit` 前提で整理。
+- 変更は261010に本番反映済み（チャット・Mac・Projectsの3か所）。ドラフト`index-2.html`もMacの`02.output/260805_読書メーター/Claude outputs/`に保存済み。GitHub Desktopでのpushはユーザー側で未実施。
+
+### 8-4. 検証結果（88冊テスト・タイトルのみ）
+| 指標 | 修正前 | 修正後 |
+|---|---|---|
+| ジャンル | 34%（30/88） | 35%（31/88） |
+| ビジネススキル（小説10冊除く78冊、旧レポートと同条件） | 49%（38/78） | 49%（38/78・変化なし） |
+
+- 想定通り、タイトルだけのテストでは伸びはわずか。今回の修正は**誤判定（false positive）の防止**が主目的で、実データのように説明文（`desc`）まで使う場面でこそ効く（長文ほど偶然の部分一致が増えるため）。
+- 残っている失敗パターンの大半は「タイトルにキーワードが一切出てこない」ケース（例：『イシューからはじめよ』『ゼロ・トゥ・ワン』『君の名は。』等）。これは言い回しやキーワード辞書を増やしても根本解決しにくく、**8-4(旧8-4)で提案したCコード連携・AI分類の方が効果が大きい**見込み。
+
+### 8-5. 残タスクと提案（ユーザーの返事待ち）
+1. **Cコード（openBD）をジャンル判定の第一シグナルにする**：新規追加時に `b.ccode` として保存し、既存の本は「全部の表紙を取り直す」と同じ作りの一括更新で補う。小説は 93/95/97 で解決する想定。実データでの openBD レスポンス形式は未検証（実装時に確認が必要）。
+2. **detail画面でジャンル・スキルを手動で選び直せるようにする**（保存先は新フィールド。自動判定より優先）。
+3. **AI分類（Gemini）を標準にする**（`aiClassify`／`AI_VER=6`）。説明文は ISBN 一致のときだけ使う。キー未設定だと動かない。ユーザーが Gemini キーを設定済みかは未確認。
+4. 8-2の不具合4・5（`ensureDesc` のISBN一致条件、`bookLevel` の語彙見直し）は未着手のまま。
+- おすすめは引き続き 1→2→3 の順（まず追加シグナルを増やす、次に人間が直せるようにする、最後にAIで総仕上げ）。
+
+### 8-6. 出典
+- openBD 書誌APIデータ仕様 https://openbd.jp/spec/
+- ONIX Code Lists（Subject scheme identifier）https://home.bic-media.com/onix_info/3-0-2/codelists/onix-codelist-27.htm
+- Cコード分類明細（本の杜）https://honno.info/category/reference/ccode_description.html
+- 楽天ブックス書籍検索API https://webservice.rakuten.co.jp/documentation/books-book-search
+- Google Books API Volume https://developers.google.com/books/docs/v1/reference/volumes?hl=ja
+- Zenn（openBD だけでは NDC が足りないことがある）https://zenn.dev/osiro/articles/7de7076c0b9b65
+
+## 9. このスレッドで決まったこと・保留中のこと
+- 保留（ユーザー未回答）：①「先月より◯冊少ないペース」の吹き出しを消すか／②Cコード連携・手動修正UI・AI分類への着手可否／③453冊の実データでの精度測定（データ書き出しJSONの提供が必要）／④GitHub Desktop の Commit→Push の完了確認（分類精度改善の反映分、261010）。
+- 判明した事実：Mac側の作業フォルダの実際の名称は `02.output/260805_読書メーター`（Projects記録上の `260805_読書管理ツール` とは末尾が異なる）。次回から接続依頼時はこの名称で呼ぶ。
+- 運用：スレッド名は日本語。反映は必ず3か所（チャット・Mac・Projects）に同内容。承認なしに本番を書き換えない。
