@@ -1127,10 +1127,24 @@
   }
   function ensureDesc(b){
     if(b.desc) return Promise.resolve();
-    if(b.isbn) return fetchGoogleByIsbn(b.isbn).then(function(g){ if(g){ if(g.desc)b.desc=g.desc; if(g.catz&&!b.catz)b.catz=g.catz; } }).catch(function(){});
-    if(b.title) return gbFetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(b.title)+'&maxResults=1&country=JP')
-      .then(function(j){ if(j&&j.items&&j.items[0]){ var v=j.items[0].volumeInfo||{}; if(v.description)b.desc=String(v.description).slice(0,700); if(v.categories&&!b.catz)b.catz=v.categories.join(' '); } }).catch(function(){});
-    return Promise.resolve();
+    // 表紙の取り違え防止と同じ考え方：ISBN検索はISBNが一致した結果だけ採用し、一致しない/
+    // ISBNが無いときはタイトルが近い候補だけを使うタイトル検索にフォールバックする（表紙と同じ
+    // 取り違えリスクがあるため、無条件に1件目を使わない）
+    var byIsbn = b.isbn ? fetchGoogleByIsbn(b.isbn).catch(function(){ return null; }) : Promise.resolve(null);
+    return byIsbn.then(function(g){
+      if(g && g.isbnMatch){ if(g.desc)b.desc=g.desc; if(g.catz&&!b.catz)b.catz=g.catz; return; }
+      if(!b.title) return;
+      return gbFetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(b.title)+'&maxResults=1&country=JP')
+        .then(function(j){
+          if(j&&j.items&&j.items[0]){
+            var v=j.items[0].volumeInfo||{};
+            if(titleLooksSame(b.title, v.title||'')){
+              if(v.description)b.desc=String(v.description).slice(0,700);
+              if(v.categories&&!b.catz)b.catz=v.categories.join(' ');
+            }
+          }
+        }).catch(function(){});
+    });
   }
   function applyAI(b){
     if(b.aiDone && b.aiVer===AI_VER) return Promise.resolve();
@@ -2433,6 +2447,83 @@
     };
   }
 
+  // Bulk backfill of catz(カテゴリ)/desc(説明文) for books that have neither -- these are the
+  // strongest signal classifyBook/mapToBizSkill have (see §8 の実データ分析：catzがある本は
+  // 「教養」への誤判定が2.7%、タイトルのみの本は41%)。Google Books の ISBN 検索→（ヒットしないか
+  // カテゴリが無ければ）タイトル検索、の順で取りに行く。同じ導線・UIパターンは openCoverRefreshSheet。
+  function openDescRefreshSheet(){
+    var targets=state.books.filter(function(b){ return !b.catz; });
+    var h='<div class="grip"></div><h2>'+ic('refresh')+'カテゴリ・説明文をまとめて取得</h2>'
+      +'<div class="cr-note">カテゴリ情報が無い'+targets.length+'冊について、Google Booksからカテゴリ・説明文を取得します。ジャンル・スキルの自動判定の精度が上がります（カテゴリが取れると「教養」への誤判定が大きく減ります）。通信が多いので、Wi-Fiで画面を開いたままお待ちください（目安：100冊で1〜2分）。</div>'
+      +'<div id="drBox"></div>'
+      +'<button class="btn primary" id="drStart">取得を始める</button>'
+      +'<button class="btn ghost" id="drClose">閉じる</button>';
+    openSheet(h);
+    var running=false, stop=false;
+    document.getElementById("drClose").onclick=function(){ stop=true; closeSheet(); if(running) render(); };
+    document.getElementById("drStart").onclick=function(){
+      if(running) return; running=true; stop=false;
+      var box=document.getElementById("drBox"), startBtn=document.getElementById("drStart");
+      startBtn.textContent="中止する"; startBtn.className="btn danger";
+      startBtn.onclick=function(){ stop=true; startBtn.disabled=true; startBtn.textContent="中止しています…"; };
+      box.innerHTML='<div class="cr-track"><i class="cr-fill" id="drFill"></i></div><div class="cr-stat"><span id="drPos">0 / '+targets.length+'</span><span id="drSum"></span></div>';
+      var idx=0, got=0, miss=0;
+      function paint(){
+        var f=document.getElementById("drFill"); if(!f){ stop=true; return; }
+        f.style.width=(targets.length?idx/targets.length*100:100).toFixed(1)+"%";
+        document.getElementById("drPos").textContent=idx+" / "+targets.length;
+        document.getElementById("drSum").textContent="取得 "+got+"・見つからず "+miss;
+      }
+      function finish(){
+        running=false; save();
+        var cancelled = idx<targets.length;
+        var f=document.getElementById("drFill");
+        if(f){
+          box.insertAdjacentHTML("beforeend",'<div class="cr-note" style="margin-top:10px">'+(cancelled?'途中で中止しました。':'完了しました。')+got+'冊のカテゴリ情報を取得しました。</div>');
+          startBtn.disabled=false; startBtn.textContent="閉じて一覧を見る"; startBtn.className="btn primary";
+          startBtn.onclick=function(){ closeSheet(); };
+          document.getElementById("drClose").style.display="none";
+        }
+        render();
+        if(!f) toast(got+"冊のカテゴリ情報を取得しました");
+      }
+      function fetchOne(b){
+        var p = b.isbn ? fetchGoogleByIsbn(b.isbn) : Promise.resolve(null);
+        return p.then(function(g){
+          // 表紙の取り違え防止と同じ考え方：ISBN検索でもISBNが一致した結果だけ採用し、
+          // 一致しない/取れないときはタイトルが近い候補だけを使うタイトル検索にフォールバックする
+          if(g && !g.isbnMatch) g=null;
+          if((!g || !g.catz) && b.title){
+            return gbFetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(b.title)+'&maxResults=1&country=JP')
+              .then(function(j){
+                if(j && j.items && j.items[0]){
+                  var v=j.items[0].volumeInfo||{};
+                  // タイトルが近い候補のときだけ採用（表紙の取り違え防止と同じ考え方）
+                  if(titleLooksSame(b.title, v.title||'')){
+                    return { catz:(v.categories&&v.categories.length)?v.categories.join(' '):'', desc:(v.description||'').slice(0,400) };
+                  }
+                }
+                return null;
+              }).catch(function(){ return null; });
+          }
+          return g;
+        }).then(function(res){
+          var ok=false;
+          if(res && res.catz){ b.catz=res.catz; ok=true; }
+          if(res && res.desc && !b.desc){ b.desc=res.desc; }
+          return ok;
+        }).catch(function(){ return false; });
+      }
+      function step(){
+        if(stop || idx>=targets.length){ finish(); return; }
+        var b=targets[idx];
+        fetchOne(b).then(function(ok){ if(ok) got++; else miss++; })
+          .then(function(){ idx++; if(idx%10===0) save(); paint(); setTimeout(step, 150); });
+      }
+      paint(); step();
+    };
+  }
+
   /* ---------- Add sheet: camera + title/ISBN search ---------- */
   function openAddSheet(focusSearch, prefillIsbn){
     var h='<div class="grip"></div><h2>本を追加</h2>';
@@ -2446,8 +2537,10 @@
     h+='<div style="text-align:center;margin-top:6px"><a href="#" id="keyLink" style="font-size:12px;color:var(--muted);text-decoration:underline">検索がうまくいかない時（APIキー設定）</a></div>';
     h+='<div style="text-align:center;margin-top:4px"><a href="#" id="aiLink" style="font-size:12px;color:var(--muted);text-decoration:underline">'+ic("sparkles")+'AIで内容から自動分類（Gemini APIキー）</a></div>';
     h+='<div style="text-align:center;margin-top:4px"><a href="#" id="crLink" style="font-size:12px;color:var(--muted);text-decoration:underline">'+ic("refresh")+'全部の表紙を取り直す</a></div>';
+    h+='<div style="text-align:center;margin-top:4px"><a href="#" id="drLink" style="font-size:12px;color:var(--muted);text-decoration:underline">'+ic("refresh")+'カテゴリ・説明文をまとめて取得</a></div>';
     openSheet(h);
     document.getElementById("crLink").onclick=function(e){ e.preventDefault(); openCoverRefreshSheet(); };
+    document.getElementById("drLink").onclick=function(e){ e.preventDefault(); openDescRefreshSheet(); };
     var inp=document.getElementById("qInput");
     document.getElementById("camBtn").onclick=function(){ closeSheet(); startScan(); };
     document.getElementById("cancelBtn").onclick=closeSheet;
@@ -2758,7 +2851,7 @@
     rd.readAsText(f);
   });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, doneYear:doneYear, computeYearlyTotals:computeYearlyTotals, buildYearGauges:buildYearGauges, computeRecentMonths:computeRecentMonths, buildMonthGauges:buildMonthGauges, nextMilestone:nextMilestone, lastDoneEntry:lastDoneEntry, render:render, coverSessionCache:coverSessionCache, coverCacheKey:coverCacheKey, sortKeyFor:sortKeyFor };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, doneYear:doneYear, computeYearlyTotals:computeYearlyTotals, buildYearGauges:buildYearGauges, computeRecentMonths:computeRecentMonths, buildMonthGauges:buildMonthGauges, nextMilestone:nextMilestone, lastDoneEntry:lastDoneEntry, render:render, coverSessionCache:coverSessionCache, coverCacheKey:coverCacheKey, sortKeyFor:sortKeyFor, openDescRefreshSheet:openDescRefreshSheet, ensureDesc:ensureDesc, fetchGoogleByIsbn:fetchGoogleByIsbn };
 
   render();
 })();
