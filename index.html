@@ -55,10 +55,11 @@
                       radial-gradient(circle at 78% 82%, rgba(255,255,255,.14) 0 3px, transparent 4px),
                       radial-gradient(circle at 22% 86%, rgba(255,255,255,.16) 0 2.5px, transparent 3.5px),
                       radial-gradient(circle at 50% 92%, rgba(255,255,255,.12) 0 2px, transparent 3px)}
-  .hero-num{position:relative;font-size:34px;font-weight:900;line-height:1;letter-spacing:-.02em;
+  .hero-num{position:relative;font-size:52px;font-weight:900;line-height:1;letter-spacing:-.02em;
     animation:heroPop .45s cubic-bezier(.34,1.56,.64,1)}
-  .hero-num small{font-size:15px;font-weight:700;margin-left:3px;opacity:.85}
-  .hero-label{position:relative;font-size:12px;font-weight:800;margin-top:3px;opacity:.95}
+  .hero-num small{font-size:18px;font-weight:700;margin-left:4px;opacity:.9}
+  .hero-num .hero-of{font-size:24px;font-weight:800;margin-left:6px;opacity:.8}
+  .hero-label{position:relative;font-size:12.5px;font-weight:800;margin-bottom:4px;opacity:.95}
   .hero-sub{position:relative;display:inline-block;margin-top:4px;font-size:11.5px;font-weight:700;
     background:rgba(255,255,255,.18);padding:4px 12px;border-radius:999px}
   @keyframes heroPop{0%{transform:scale(.72);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -92,12 +93,10 @@
   .hshelf-empty{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:11px;font-weight:700;opacity:.85}
   .hs-book{transform-box:fill-box;transform-origin:50% 100%}
   .hs-in{animation:hsPop .5s cubic-bezier(.34,1.5,.5,1) both}
-  .hs-sway{transform-box:fill-box;transform-origin:50% 100%;animation:hsWave 3.6s ease-in-out infinite}
-  .hs-sway.hs-last{animation:hsSway 3.2s ease-in-out infinite}
+  .hs-sway{transform-box:fill-box;transform-origin:50% 100%;animation:hsWave 4.4s ease-in-out infinite}
   @keyframes hsPop{0%{opacity:0;transform:translateY(10px) scaleY(.2)}55%{opacity:1;transform:translateY(-3px) scaleY(1.1)}100%{opacity:1;transform:translateY(0) scaleY(1)}}
-  @keyframes hsWave{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
-  @keyframes hsSway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(9deg)}}
-  @media (prefers-reduced-motion: reduce){ .hs-in,.hs-sway,.hs-sway.hs-last{animation:none} }
+  @keyframes hsWave{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+  @media (prefers-reduced-motion: reduce){ .hs-in,.hs-sway{animation:none} }
   .hero-goal-btn{margin-top:6px;border:none;cursor:pointer;font-family:inherit;color:#fff;font-size:11px;font-weight:800;
     background:rgba(255,255,255,.18);padding:5px 12px;border-radius:999px;-webkit-tap-highlight-color:transparent}
   .hero-goal-btn:active{background:rgba(255,255,255,.3)}
@@ -1663,7 +1662,7 @@
         var last=(idx===shown-1), tilt=last?' hs-last':'';
         var play=idx>=from;
         var delay=play?' style="animation-delay:'+Math.round(120+(idx-from)*step)+'ms"':'';
-        var wave=' style="animation-delay:-'+((idx*0.13)%3.6).toFixed(2)+'s"';
+        var wave=' style="animation-delay:-'+((idx*0.13)%4.4).toFixed(2)+'s"';
         svg+='<g class="hs-book'+(play?' hs-in':'')+'"'+delay+'><g class="hs-sway'+tilt+'"'+wave+'><rect x="'+x.toFixed(1)+'" y="'+(yb-h)+'" width="'+bw.toFixed(1)+'" height="'+h+'" rx="1.6" fill="'+cols[(idx+r*2)%6]+'" opacity="'+(last?1:.86)+'"/>'
           +'<rect x="'+(x+bw*0.28).toFixed(1)+'" y="'+(yb-h+4)+'" width="'+(bw*0.44).toFixed(1)+'" height="2" fill="rgba(86,20,22,.28)"/></g></g>';
       }
@@ -1692,7 +1691,7 @@
     });
     var diff=thisMonth-lastMonth, sub;
     if(totalDone===0){ sub=ic('book')+'最初の1冊を読んでみましょう！'; }
-    else if(thisMonth===0){ sub = lastMonth>0 ? ("先月は"+lastMonth+"冊でした。今月も読んでいきましょう！") : "今月はまだ読了がありません"; }
+    else if(thisMonth===0){ sub="今月はまだ読了がありません"; }
     else if(lastMonth===0){ sub=ic('flag')+'今月は'+thisMonth+'冊 読了！'; }
     else if(diff>0){ sub=ic('trendUp')+'先月より'+diff+'冊多いペース'; }
     else if(diff<0){ sub=ic('trendDown')+'先月より'+Math.abs(diff)+'冊少ないペース'; }
@@ -1702,8 +1701,7 @@
     if(goal>0){
       barPct=Math.max(0,Math.min(100,thisMonth/goal*100));
       var remain=goal-thisMonth;
-      headL=ic('target')+'今月の目標';
-      headR='<b>'+thisMonth+'</b> / '+goal+'冊';
+      headL=''; headR='';
       footL = remain>0
         ? '<button type="button" class="hbar-btn" id="goalBtn">あと'+remain+'冊で達成'+ic('pencil')+'</button>'
         : '<button type="button" class="hbar-btn done" id="goalBtn">'+ic('check')+'目標達成！'+ic('pencil')+'</button>';
@@ -1717,13 +1715,13 @@
       footR='次の節目まであと'+ms.remain+'冊';
     }
     var gauge='<div class="hbar">'
-      +'<div class="hbar-head"><span>'+headL+'</span><span class="hbar-val">'+headR+'</span></div>'
+      +(headL?'<div class="hbar-head"><span>'+headL+'</span><span class="hbar-val">'+headR+'</span></div>':'')
       +'<div class="hbar-track"><i class="hbar-fill" style="width:'+barPct.toFixed(1)+'%"></i></div>'
       +'<div class="hbar-foot">'+footL+'<span>'+footR+'</span></div>'
       +'</div>';
     var monthGauges = buildMonthGauges(computeRecentMonths(state.books, 3));
-    el.innerHTML='<div class="hero-num">'+thisMonth+'<small>冊</small></div>'
-      +'<div class="hero-label">'+ic('calendar')+'今月読んだ本</div>'
+    el.innerHTML='<div class="hero-label">'+ic('calendar')+'今月読んだ本</div>'
+      +'<div class="hero-num">'+thisMonth+(goal>0?'<span class="hero-of">/ '+goal+'</span>':'')+'<small>冊</small></div>'
       +'<div class="hero-sub">'+sub+'</div>'
       +gauge
       +buildYearShelf(state.books)
