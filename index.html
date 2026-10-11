@@ -900,6 +900,7 @@
   }
   function covLevel(p){ return p>=80?3:(p>=40?2:(p>0?1:0)); }
   var COV_OPEN={}, COV_FILTER='all';
+  var GENRE_OPEN={}, GENRE_BUILT={};
   function bizLabelOf(key){
     var out=null;
     BIZ_DOMAINS.forEach(function(d){ d.skills.forEach(function(s){ if(s.key===key) out={skill:s.label, domain:d.label}; }); });
@@ -967,9 +968,59 @@
     h+='</div>';
     return h;
   }
+  // ジャンル別（8分類）も、ビジネススキル カバレッジと同じ「カード折りたたみ」の見た目で表示する。
+  // タップで開くとその場で読んだ本の表紙一覧が並ぶ（ページ遷移しない）。本の表紙取得は重いので、
+  // 初めて開いたときだけ作る（GENRE_BUILT）。
+  function buildGenreCoverageHTML(r){
+    var order=SKILLS.slice().sort(function(a,b){return (r.pct[b.key]||0)-(r.pct[a.key]||0);});
+    var filled=order.filter(function(s){ return (r.counts[s.key]||0)>0; }).length;
+    var h='<div class="cov-wrap"><div class="cov-head"><span class="cov-title">'+ic("map")+'ジャンル別カバレッジ</span><span class="cov-rate">開拓 '+filled+'/'+SKILLS.length+'・'+r.total+'冊</span></div>';
+    h+='<div class="cov2" id="genreCov">';
+    order.forEach(function(s){
+      var c=r.counts[s.key]||0, p=r.pct[s.key]||0, lv=levelFromPct(p);
+      h+='<div class="cd'+(GENRE_OPEN[s.key]?' open':'')+'" data-genre="'+s.key+'">'
+        +'<button type="button" class="cd-h"><span class="cd-n">'+esc(s.label)+'</span>'
+        +'<span class="skbar-track" style="flex:1;margin:0 10px"><span class="skbar-fill" style="width:'+p+'%;background:'+s.color+'"></span></span>'
+        +'<span class="cd-r">Lv.'+lv.lv+' <b>'+c+'</b>冊</span><span class="cd-c" aria-hidden="true"></span></button>'
+        +'<div class="cd-b"><div class="gc-books" id="gcBooks-'+s.key+'"></div></div></div>';
+    });
+    h+='</div></div>';
+    return h;
+  }
+  function fillGenreBooks(key, done){
+    var box=document.getElementById('gcBooks-'+key); if(!box || GENRE_BUILT[key]) return;
+    GENRE_BUILT[key]=true;
+    var books=(done||state.books.filter(function(b){return b.status==='done';})).filter(function(b){ return classifyBook(b)===key; });
+    if(!books.length){ box.innerHTML='<div class="sk-empty" style="padding:10px 2px">この分野に該当する「読んだ本」はまだありません。</div>'; return; }
+    books.forEach(function(b){
+      var row=document.createElement('div'); row.className='res';
+      row.appendChild(coverNode(b,'rescover'));
+      var d=document.createElement('div'); d.className='resinfo';
+      var meta=[]; if(b.author)meta.push(b.author); if(b.publisher)meta.push(b.publisher);
+      d.innerHTML='<div class="restitle"></div><div class="resmeta"></div>';
+      d.querySelector('.restitle').textContent=b.title||'(無題)';
+      d.querySelector('.resmeta').textContent=meta.join(' ／ ');
+      row.appendChild(d);
+      row.onclick=function(){ openBookMenu(b); };
+      box.appendChild(row);
+    });
+  }
+  function initGenreCoverageUI(root, done){
+    var wrap=root.querySelector('#genreCov'); if(!wrap) return;
+    Array.prototype.forEach.call(wrap.querySelectorAll('.cd[data-genre]'),function(cd){
+      var key=cd.getAttribute('data-genre');
+      if(GENRE_OPEN[key]) fillGenreBooks(key, done);
+      cd.querySelector('.cd-h').onclick=function(){
+        var on=cd.classList.toggle('open'); GENRE_OPEN[key]=on;
+        if(on) fillGenreBooks(key, done);
+      };
+    });
+  }
   function initCoverageUI(root){
     var cov=root.querySelector('#cov2'); if(!cov) return;
-    Array.prototype.forEach.call(root.querySelectorAll('.cd-h'),function(btn){
+    // 他のカード群（ジャンル別カバレッジなど）も同じ .cd-h クラスを使うため、自分の #cov2 の
+    // 中だけに限定する（root全体から探すと他のカードのクリックハンドラを上書きしてしまう）
+    Array.prototype.forEach.call(cov.querySelectorAll('.cd-h'),function(btn){
       btn.onclick=function(){ var cd=btn.parentNode, k=cd.getAttribute('data-dom'); var on=cd.classList.toggle('open'); COV_OPEN[k]=on; };
     });
     Array.prototype.forEach.call(root.querySelectorAll('.cov-chip'),function(c){
@@ -1185,23 +1236,11 @@
     h+='<div class="cov-wrap"><div class="cov-head"><span class="cov-title">'+ic("calendar")+'月別 読了冊数</span><span class="cov-rate">直近12か月</span></div>';
     h+=buildMonthlyChart(computeMonthly(done, 12));
     h+='</div>';
-    h+='<div class="sk-bars">';
-    // sort by gauge % desc
-    var order=SKILLS.slice().sort(function(a,b){return (r.pct[b.key]||0)-(r.pct[a.key]||0);});
-    order.forEach(function(s){
-      var c=r.counts[s.key]||0, p=r.pct[s.key]||0, lv=levelFromPct(p);
-      h+='<div class="skbar" data-genre="'+s.key+'">';
-      h+='<div class="skbar-head"><span class="skbar-name">'+esc(s.label)+'</span><span class="skbar-lv">Lv.'+lv.lv+' '+lv.name+'<span class="skbar-cnt">'+c+'冊</span></span></div>';
-      h+='<div class="skbar-track"><div class="skbar-fill" style="width:'+p+'%;background:'+s.color+'"></div></div>';
-      h+='</div>';
-    });
-    h+='</div>';
+    h+=buildGenreCoverageHTML(r);
     h+=buildCoverageHTML(computeBizCoverage(done));
     h+='<div class="sk-note">'+(geminiKey()?ic('sparkles')+'AIが本の内容（あらすじ）を読んで分類しています。':'分野は本のタイトル・内容から自動判定。AIキーを設定すると内容を読んでより正確に分類します（本を追加→AIで自動分類）。')+'読んだ本が増えるほどゲージが伸びます。</div>';
     body.innerHTML=h;
-    Array.prototype.forEach.call(body.querySelectorAll('.skbar[data-genre]'),function(el){
-      el.onclick=function(){ openSkillDetail('genre', el.dataset.genre, done); };
-    });
+    initGenreCoverageUI(body, done);
     Array.prototype.forEach.call(body.querySelectorAll('.cov-cell[data-biz]'),function(el){
       el.onclick=function(){ openSkillDetail('biz', el.dataset.biz, done); };
     });
