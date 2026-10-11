@@ -1535,9 +1535,19 @@
       if(b && b.title) return b;
       return fetchGoogleByIsbn(isbn13).then(function(g){ return g; });
     }).then(function(res){
-      if(res && (!res.cover)){
+      // openBD は書名・表紙は強いが、カテゴリ・説明文(classifyBook/mapToBizSkillの最大の手がかり。
+      // §8参照)を返さない。表紙欠けのフォールバックで呼んでいたGoogle Books問い合わせを、
+      // カテゴリ取得にも使う -- これをしないと、ISBNスキャンで追加した本は新規でも一生catz無しに
+      // なってしまう(実データで判明した一番多い追加経路)。ISBNが一致した結果のときだけ採用。
+      if(res && (!res.cover || !res.catz)){
         return fetchGoogleByIsbn(isbn13).then(function(g){
-          if(g && g.cover) res.cover = g.cover;
+          if(g){
+            if(!res.cover && g.cover) res.cover = g.cover;
+            if(g.isbnMatch){
+              if(!res.catz && g.catz) res.catz = g.catz;
+              if(!res.desc && g.desc) res.desc = g.desc;
+            }
+          }
           return res;
         }).catch(function(){ return res; });
       }
