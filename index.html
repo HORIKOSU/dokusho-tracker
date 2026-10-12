@@ -679,11 +679,16 @@
   }
   function classifyBook(b){
     if(b.aiGenre && b.aiVer===AI_VER) return b.aiGenre;
+    var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.desc||'')).toLowerCase();
+    // AIそのものが主題の本（「ChatGPT仕事術」「Claude活用術」等）は、Google Booksの
+    // カテゴリより先にIT・技術へ判定する。例えば「Claude仕事術」はGoogle Books側のカテゴリが
+    // 「Business & Economics」になっていることが多く、catzを先に見るとビジネスに判定されて
+    // しまっていた（261012にユーザー指摘で判明）。「AI時代」等の弱い修飾語では発動しないよう、
+    // 固有のAI関連語・主要ツール名に限定する。
+    if(hay.indexOf('生成ai')>=0 || hay.indexOf('chatgpt')>=0 || hay.indexOf('人工知能')>=0 || hay.indexOf('機械学習')>=0 || hay.indexOf('ディープラーニング')>=0 || hay.indexOf('大規模言語モデル')>=0
+      || kwHit(hay,'claude') || kwHit(hay,'gemini') || kwHit(hay,'copilot') || kwHit(hay,'gpt') || kwHit(hay,'llm')) return 'it';
     var byCat = classifyByCategory(b.catz);
     if(byCat) return byCat;
-    var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.desc||'')).toLowerCase();
-    // AIそのものが主題の本のみ IT・技術へ（「AI時代」等の弱い修飾語では発動しない）
-    if(hay.indexOf('生成ai')>=0 || hay.indexOf('chatgpt')>=0 || hay.indexOf('人工知能')>=0 || hay.indexOf('機械学習')>=0 || hay.indexOf('ディープラーニング')>=0 || hay.indexOf('大規模言語モデル')>=0) return 'it';
     // count keyword hits per category and take the strongest match, rather than the first
     // rule (in array order) that happens to match -- avoids a single incidental keyword
     // from an unrelated category winning over a book's true, more-repeated topic
@@ -857,7 +862,7 @@
     if(b.aiSkill && b.aiVer===AI_VER) return b.aiSkill;
     var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.desc||'')).toLowerCase();
     // AIそのものが主題の本のみ AI・テクノベートへ（「AI時代」等の弱い修飾語では発動しない）
-    if(hay.indexOf('生成ai')>=0||hay.indexOf('chatgpt')>=0||hay.indexOf('プロンプト')>=0||hay.indexOf('大規模言語モデル')>=0) return 'te_genai';
+    if(hay.indexOf('生成ai')>=0||hay.indexOf('chatgpt')>=0||hay.indexOf('プロンプト')>=0||hay.indexOf('大規模言語モデル')>=0||kwHit(hay,'claude')||kwHit(hay,'gemini')||kwHit(hay,'copilot')||kwHit(hay,'gpt')||kwHit(hay,'llm')) return 'te_genai';
     if(hay.indexOf('機械学習')>=0||hay.indexOf('ディープラーニング')>=0||hay.indexOf('深層学習')>=0||hay.indexOf('machine learning')>=0||hay.indexOf('人工知能')>=0) return 'te_ml';
     // count keyword hits per skill and take the strongest match (ties broken by BIZ_ORDER,
     // i.e. the array order below) instead of the first keyword hit in priority order -- avoids
