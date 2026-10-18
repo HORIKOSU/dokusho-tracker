@@ -1,6 +1,6 @@
 # Booskill（読書管理ツール）｜Claude Code 引き継ぎ用 CLAUDE.md
 
-最終更新：2026-10-12（§8-12 AIツール主題の本がビジネスに誤判定される不具合を修正・本番反映済み。GitHub Pushはユーザー側で実施待ち）
+最終更新：2026-10-18（§5-7 ダブルタップズーム無効化／§5-8 積読タブのジャンル絞り込みチップを追加・本番反映済み。GitHub Pushはユーザー側で実施待ち）
 公開URL：https://horikosu.github.io/dokusho-tracker/
 リポジトリ：https://github.com/HORIKOSU/dokusho-tracker（Public／GitHub Pages・main・/root）
 
@@ -42,6 +42,7 @@
 | `gb_api_key` | Google Books APIキー（任意） |
 | `gemini_api_key` / `gemini_model` | AI分類用キー（任意） |
 | `dokusho_extrecs_v1` | 「新しく出会う本」の提案キャッシュ（`{sig, items, at}`。7日で作り直し） |
+| `dokusho_genrefilter_v1` | 積読タブ等のジャンル絞り込み設定（タブ名→ジャンルキー。空文字=すべて） |
 
 book の主なフィールド：`id, isbn, title, author, publisher, pubdate, cover, status('want'|'stack'|'reading'|'done'), addedAt, updatedAt, source, memo, rating, priority(1〜5・want/stackのみ), history:[{status,at}], catz, desc, pages, genre, bizskill`
 - `history` は最大200件。無い古いデータは `ensureHistory` が `updatedAt` から補完する。
@@ -93,6 +94,20 @@ book の主なフィールド：`id, isbn, title, author, publisher, pubdate, co
   - レベル：`covLevel` 0=未開拓、1=〜39%、2=40〜79%、3=80%以上。レベル3のセルは文字が白。
   - ゲージ％は冊数でなく「本のレベル×重複度」（`bookLevel` / `skillPctFromBooks`）。
 - データ：JSONの書き出し／読み込み（`exportBooks/importBooks`、ISBN重複はスキップ）。
+
+### 5-7. ダブルタップでのズーム無効化（261018）
+- ユーザーから「ダブルタップはズームしないようにして」と依頼。
+- viewportの`user-scalable=no`だけではiOS Safariがアクセシビリティの都合でダブルタップズームを無視することがあるため、CSS側でも明示的に抑止。`html,body`に`touch-action:manipulation`を追加（パン・ピンチズームは維持、ダブルタップズームのみ止まる）。
+- 既存の`.card`・`.priority-star`等、個別に`touch-action`を指定している要素はそのまま優先される（上書きなし）ため影響なし。Playwrightでカードタップ時に詳細シートが開くことを確認済み。
+- 261018に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
+
+### 5-8. 積読タブ：ジャンルで絞り込むチップ（261018）
+- ユーザーから「積読からある条件を入れたら、それをソートするような機能」の相談を受け、条件の種類を確認したところ「ジャンル・ジャンルの絞り込み」を選択。
+- 積読タブの一覧上部に、既存の「ビジネススキル カバレッジ」の絞り込みチップ（`.cov-chip`）と似た見た目のチップ行を追加（`#genreFilterBox`／`.gf-chip`）。「すべて」＋該当する本がある8ジャンル（`SKILLS`）のみ表示、件数つき。
+- タップするとそのジャンルの積読本だけに絞り込み（`classifyBook(b)`で判定）。既存の「並び替え」（★順・タイトル順など）とは独立していて併用可能。絞り込み状態は`dokusho_genrefilter_v1`にタブ単位で保存し、タブを切り替えても保持される。
+- 他のタブ（読みたい本・読んでる本・読んだ本）には表示しない（スコープはユーザーの依頼どおり積読タブのみ）。
+- Playwrightで検証：チップ表示・絞り込み件数・並び替えとの併用・タブ往復後の保持・「すべて」での解除・0件時の案内文を確認。既存の一覧・並び替え・他タブの表示に影響がないことも確認済み。
+- 261018に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
 
 ## 6. 開発・検証のしかた
 - 共有シート：`openSheet(html)` / `closeSheet()`（`#overlay` / `#sheet` を共用）。
