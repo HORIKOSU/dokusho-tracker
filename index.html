@@ -186,6 +186,9 @@
   .cs-tag.new{background:#fff3cd;color:#8a6500}
   .cs-ext-author{margin-top:3px;margin-left:2px;font-size:11px;color:var(--muted)}
   .cs-ext-reason{margin-top:4px;margin-left:2px;font-size:11.5px;color:var(--accent-dk)}
+  /* 経営者向け ビジネス書ランキング */
+  .br-wrap{margin-top:20px}
+  .br-rank{flex:0 0 auto;min-width:20px;font-weight:800;color:var(--accent);font-size:14px}
   .cov-chips{display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap}
   .cov-chip{font-family:inherit;font-size:11.5px;font-weight:800;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
   .cov-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -290,6 +293,8 @@
   .data-footer{text-align:center;font-size:12px;color:var(--muted);margin:22px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
   .data-footer a{color:var(--muted);text-decoration:underline}
   #monthlyBox .cov-wrap.mo-top{margin-top:0;padding-top:0;border-top:none;margin-bottom:14px}
+  #monthlyBox .mo-filter-note{text-align:center;font-size:11.5px;color:var(--muted);margin:-8px 0 14px}
+  #monthlyBox .mo-filter-note a{color:var(--accent-dk);text-decoration:underline}
   .grid.slide-r,.grid.slide-l{animation:shelfIn .18s ease}
   @keyframes shelfIn{from{opacity:.35}to{opacity:1}}
   @media (prefers-reduced-motion: reduce){ .grid.slide-r,.grid.slide-l{animation:none} }
@@ -598,7 +603,8 @@
     alert:'<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.2v.1"/>',
     sparkles:'<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
     map:'<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
-    refresh:'<path d="M20 11a8 8 0 0 0-14-4.5L4 9M4 4v5h5M4 13a8 8 0 0 0 14 4.5L20 15M20 20v-5h-5"/>'
+    refresh:'<path d="M20 11a8 8 0 0 0-14-4.5L4 9M4 4v5h5M4 13a8 8 0 0 0 14 4.5L20 15M20 20v-5h-5"/>',
+    trophy:'<path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 5H4v1a4 4 0 0 0 4 4"/><path d="M17 5h3v1a4 4 0 0 1-4 4"/><path d="M12 14v3"/><path d="M9 20h6"/><path d="M9.5 20v-1.5a2.5 2.5 0 0 1 5 0V20"/>'
   };
   function ic(n){ return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||'')+'</svg>'; }
   var STATUSES = [
@@ -979,6 +985,28 @@
     h+='</div>';
     return h;
   }
+  // 「経営者向け ビジネス書ランキング」カード一覧はstate.booksに無い本なのでIDで引けない。
+  // 直近の描画分だけ保持しておき、クリック時にインデックスで引く（EXTREC_CURRENTと同じ考え方）。
+  var BIZRANK_CURRENT=[];
+  function buildBizRankingHTML(){
+    var cached=loadBizRanking();
+    BIZRANK_CURRENT=(cached && cached.items) || [];
+    var h='<div class="cov-wrap br-wrap"><div class="cov-head"><span class="cov-title">'+ic('trophy')+'経営者向け ビジネス書ランキング</span>'
+      +(cached&&cached.monthKey?'<span class="cov-rate">'+esc(cached.monthKey.replace('-','年'))+'月更新</span>':'')+'</div>';
+    if(!geminiKey()){
+      h+='<div class="cs-empty">Gemini APIキーを設定すると、AIが経営者向けのおすすめビジネス書TOP10を毎月自動で作成します（本を追加→AIで内容から自動分類）。</div>';
+    } else if(BIZRANK_CURRENT.length){
+      BIZRANK_CURRENT.forEach(function(r,i){
+        h+='<div class="cs-card br-card" data-bridx="'+i+'"><div class="cs-bk"><span class="br-rank">'+(i+1)+'</span><span class="cs-t">'+esc(r.title||'(無題)')+'</span></div>'
+          +(r.author?'<div class="cs-ext-author">'+esc(r.author)+'</div>':'')
+          +(r.reason?'<div class="cs-ext-reason">'+esc(r.reason)+'</div>':'')+'</div>';
+      });
+    } else {
+      h+='<div class="cs-empty">作成しています…（少し待ってからもう一度開いてみてください）</div>';
+    }
+    h+='</div>';
+    return h;
+  }
   function buildCoverageHTML(cov, done){
     var rate=cov.total?Math.round(cov.covered/cov.total*100):0;
     var h=buildSuggestHTML(cov, done);
@@ -1091,6 +1119,12 @@
         var r=EXTREC_CURRENT[idx]; if(r) presentFound(r, {back:false});
       };
     });
+    Array.prototype.forEach.call(root.querySelectorAll('.br-card[data-bridx]'),function(el){
+      el.onclick=function(){
+        var idx=parseInt(el.getAttribute('data-bridx'),10);
+        var r=BIZRANK_CURRENT[idx]; if(r) presentFound(r, {back:false});
+      };
+    });
   }
   // Search-time preview: which skill a book covers + how much it raises the gauge
   function bizPreview(b){
@@ -1167,7 +1201,7 @@
     });
     return buckets;
   }
-  function buildMonthlyChart(buckets){
+  function buildMonthlyChart(buckets, activeKey){
     var maxc=1; buckets.forEach(function(b){ if(b.count>maxc) maxc=b.count; });
     var n=buckets.length, w=320, h=136, padB=22, padT=14, gap=4;
     var barW=(w-gap*(n-1))/n;
@@ -1176,10 +1210,11 @@
       var bh=(h-padT-padB)*(b.count/maxc);
       var x=i*(barW+gap), y=h-padB-Math.max(bh,b.count>0?4:0);
       var barH=Math.max(bh,b.count>0?4:1);
+      var isCur=activeKey && b.key===activeKey;
       svg+='<g data-month="'+b.key+'" style="cursor:pointer">';
-      svg+='<rect x="'+x.toFixed(1)+'" y="'+(h-padB-barH).toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+barH.toFixed(1)+'" rx="3" fill="'+(b.count>0?getVar("--accent"):getVar("--line"))+'"/>';
+      svg+='<rect x="'+x.toFixed(1)+'" y="'+(h-padB-barH).toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+barH.toFixed(1)+'" rx="3" fill="'+(b.count>0?getVar(isCur?"--accent-dk":"--accent"):getVar("--line"))+'"'+(isCur?' stroke="'+getVar("--accent-dk")+'" stroke-width="1.5"':'')+'/>';
       if(b.count>0){ svg+='<text x="'+(x+barW/2).toFixed(1)+'" y="'+(h-padB-barH-4).toFixed(1)+'" font-size="9.5" font-weight="800" fill="'+getVar("--accent-dk")+'" text-anchor="middle">'+b.count+'</text>'; }
-      svg+='<text x="'+(x+barW/2).toFixed(1)+'" y="'+(h-8).toFixed(1)+'" font-size="8" fill="'+getVar("--muted")+'" text-anchor="middle">'+(b.showYear?"'"+String(b.year).slice(2)+"/":"")+b.label+'</text>';
+      svg+='<text x="'+(x+barW/2).toFixed(1)+'" y="'+(h-8).toFixed(1)+'" font-size="8" font-weight="'+(isCur?'800':'400')+'" fill="'+(isCur?getVar("--accent-dk"):getVar("--muted"))+'" text-anchor="middle">'+(b.showYear?"'"+String(b.year).slice(2)+"/":"")+b.label+'</text>';
       svg+='</g>';
     });
     svg+='</svg>';
@@ -1367,6 +1402,63 @@
       });
     });
   }
+  // 経営者向け ビジネス書ランキング（261031〜）。ユーザーの読書傾向とは無関係に、
+  // 「今、経営者・マネジメント層が読むべき本」をGeminiに10冊挙げてもらう。月1回だけ
+  // 作り直す（dokusho_bizranking_v1にmonthKeyつきでキャッシュ）。「新しく出会う本」と同じく
+  // 架空のタイトルを出さないよう、1冊ずつGoogle Booksで実在確認してから採用する。
+  var BIZRANK_KEY = "dokusho_bizranking_v1";
+  function bizRankMonthKey(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+  function loadBizRanking(){
+    try{ var raw=localStorage.getItem(BIZRANK_KEY); return raw?JSON.parse(raw):null; }catch(e){ return null; }
+  }
+  function saveBizRanking(o){ try{ localStorage.setItem(BIZRANK_KEY, JSON.stringify(o)); }catch(e){} }
+  // キー未設定では作れないので「毎回スキル画面を開くたびに再試行」を避け、falseを返す
+  // （キー設定後にスキル画面を開き直せばそのとき生成される）
+  function bizRankNeedsRefresh(){
+    if(!geminiKey()) return false;
+    var cached=loadBizRanking();
+    return !cached || cached.monthKey!==bizRankMonthKey();
+  }
+  function fetchBizRanking(){
+    var key=geminiKey(); if(!key) return Promise.resolve([]);
+    var prompt='あなたは経営者向けの読書アドバイザーです。今、会社の経営者・マネジメント層が読むべきビジネス書を10冊、ランキング形式で提案してください。\n\n'
+      +'条件：\n・実在する書籍のみ（架空のタイトルを作らない）\n・定番の名著と、近年評価の高い新しめの本をバランスよく含める\n・同じ著者やシリーズに偏りすぎない\n\n'
+      +'必ず次のJSON配列のみを返す（説明文は不要、1位から順に10件）： [{"title":"","author":"","reason":"経営者にとっての一言ポイント"}, ...]';
+    var payload={ contents:[{parts:[{text:prompt}]}], generationConfig:{ responseMimeType:'application/json', temperature:0.5 } };
+    var models=geminiModel() ? [geminiModel()].concat(GEMINI_MODELS) : GEMINI_MODELS.slice();
+    var i=0;
+    function tryNext(){
+      if(i>=models.length) return Promise.resolve(null);
+      var m=models[i++];
+      return geminiCall(key,m,payload).then(function(j){
+        setGeminiModel(m);
+        try{ return JSON.parse(j.candidates[0].content.parts[0].text); }catch(e){ return null; }
+      }, function(err){ if(err.http===404 || err.http===400) return tryNext(); return null; });
+    }
+    return tryNext().then(function(list){
+      if(!Array.isArray(list) || !list.length) return [];
+      return Promise.all(list.slice(0,10).map(function(r){
+        if(!r || !r.title) return null;
+        var q=r.title+(r.author?(' '+r.author):'');
+        return gbFetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(q)+'&maxResults=1&country=JP').then(function(j){
+          if(j && j.items && j.items[0]){
+            var v=j.items[0].volumeInfo||{};
+            if(!titleLooksSame(r.title, v.title||'')) return null; // 実在確認できないものは出さない
+            var m=volToMeta(v);
+            m.reason=r.reason||'';
+            return m;
+          }
+          return null;
+        }).catch(function(){ return null; });
+      })).then(function(arr){ return arr.filter(Boolean); });
+    }).catch(function(){ return []; });
+  }
+  function getBizRanking(){
+    return fetchBizRanking().then(function(items){
+      saveBizRanking({monthKey:bizRankMonthKey(), items:items||[], at:Date.now()});
+      return items||[];
+    }).catch(function(){ return (loadBizRanking()||{}).items||[]; });
+  }
   function getExtRecs(done){
     var sig=extRecSignature(done);
     return (geminiKey() ? fetchExtRecsAI(done) : Promise.resolve(null)).then(function(items){
@@ -1405,6 +1497,7 @@
     h+='<div class="cov-wrap"><div class="cov-head"><span class="cov-title">'+ic("calendar")+'月別 読了冊数</span><span class="cov-rate">直近12か月</span></div>';
     h+=buildMonthlyChart(computeMonthly(done, 12));
     h+='</div>';
+    h+=buildBizRankingHTML();
     h+=buildGenreCoverageHTML(r);
     h+=buildCoverageHTML(computeBizCoverage(done), done);
     h+='<div class="sk-note">'+(geminiKey()?ic('sparkles')+'AIが本の内容（あらすじ）を読んで分類しています。':'分野は本のタイトル・内容から自動判定。AIキーを設定すると内容を読んでより正確に分類します（本を追加→AIで自動分類）。')+'読んだ本が増えるほどゲージが伸びます。</div>';
@@ -1487,7 +1580,8 @@
     var need=done.filter(function(b){return !b.genre;});
     var needAInow=geminiKey() ? done.filter(function(b){return !b.aiDone || b.aiVer!==AI_VER;}) : [];
     var needExt=extRecsNeedRefresh(done);
-    if(!need.length && !needAInow.length && !needExt) return; // everything already enriched/classified/提案済み
+    var needBizRank=bizRankNeedsRefresh();
+    if(!need.length && !needAInow.length && !needExt && !needBizRank) return; // everything already enriched/classified/提案済み
     var badge=document.getElementById('skillRefreshing'); if(badge) badge.innerHTML=' <span class="spinner"></span>';
     function finishRefresh(){
       try{ if(state.view==='skill'){ renderSkillBody(done); var b2=document.getElementById('skillRefreshing'); if(b2) b2.innerHTML=''; } }catch(e){}
@@ -1499,6 +1593,7 @@
       return runLimited(needAI, 4, applyAI);
     }).then(function(){ try{save();}catch(e){} })
       .then(function(){ return needExt ? getExtRecs(done) : null; })
+      .then(function(){ return needBizRank ? getBizRanking() : null; })
       .then(finishRefresh)
       .catch(finishRefresh);
   }
@@ -1522,7 +1617,7 @@
   }
   function genreFilterFor(tab){ return (state.genreFilter && state.genreFilter[tab]) || ""; }
 
-  var state = { books: load(), tab:"want", q:"", view:"books", sortMode: loadSortMode(), genreFilter: loadGenreFilter() };
+  var state = { books: load(), tab:"want", q:"", view:"books", sortMode: loadSortMode(), genreFilter: loadGenreFilter(), doneMonthFilter:"" };
   state.books.forEach(ensureHistory);
 
   function load(){
@@ -1944,11 +2039,20 @@
     if(mb){
       if(state.tab==="done"){
         mb.style.display="block";
+        var dmf=state.doneMonthFilter;
+        var dmfLabel = dmf ? dmf.split("-")[0]+"年"+parseInt(dmf.split("-")[1],10)+"月" : "";
         mb.innerHTML='<div class="cov-wrap mo-top"><div class="cov-head"><span class="cov-title">'+ic("calendar")+'月別 読了冊数</span><span class="cov-rate">直近12か月</span></div>'
-          +buildMonthlyChart(computeMonthly(state.books,12))+'</div>';
+          +buildMonthlyChart(computeMonthly(state.books,12), dmf)+'</div>'
+          +(dmf ? '<div class="mo-filter-note">'+esc(dmfLabel)+'の本だけ表示中　<a href="#" id="moFilterClear">すべて表示に戻す</a></div>' : '');
         Array.prototype.forEach.call(mb.querySelectorAll("[data-month]"),function(el){
-          el.onclick=function(){ openSkillDetail("month", el.dataset.month); };
+          el.onclick=function(){
+            var k=el.dataset.month;
+            state.doneMonthFilter = (state.doneMonthFilter===k) ? "" : k; // 同じ月をもう一度押すと解除
+            render();
+          };
         });
+        var clearEl=document.getElementById("moFilterClear");
+        if(clearEl){ clearEl.onclick=function(e){ e.preventDefault(); state.doneMonthFilter=""; render(); }; }
       }else{
         mb.style.display="none"; mb.innerHTML="";
       }
@@ -1958,6 +2062,9 @@
     if(q){ items = items.filter(function(b){
       return ((b.title||"")+" "+(b.author||"")+" "+(b.publisher||"")).toLowerCase().indexOf(q)>=0;
     }); }
+    if(state.tab==="done" && state.doneMonthFilter){
+      items = items.filter(function(b){ return doneMonthKey(b)===state.doneMonthFilter; });
+    }
 
     renderGenreFilterBox(items);
     if(state.tab==="stack"){
@@ -1977,6 +2084,9 @@
       if(state.tab==="stack" && genreFilterFor(state.tab)){
         e.innerHTML='<div class="big">'+st.icon+'</div><p><b>このジャンルの積読本はありません</b></p>'+
           '<p>上の「すべて」を押すと絞り込みを解除できます</p>';
+      }else if(state.tab==="done" && state.doneMonthFilter){
+        e.innerHTML='<div class="big">'+st.icon+'</div><p><b>この月に読み終えた本はありません</b></p>'+
+          '<p>グラフの「すべて表示に戻す」を押すと絞り込みを解除できます</p>';
       }else{
         e.innerHTML='<div class="big">'+st.icon+'</div><p><b>「'+st.label+'」はまだありません</b></p>'+
           '<p>右下の「＋」からISBN読み取り、またはタイトル検索で登録できます</p>';
@@ -3109,7 +3219,7 @@
     if(!status || status===state.tab) return;
     var from=SHELF_ORDER.indexOf(state.tab), to=SHELF_ORDER.indexOf(status);
     var dir=(to>=0 && from>=0) ? (to>from?1:-1) : 1;
-    state.tab=status; state.q="";
+    state.tab=status; state.q=""; state.doneMonthFilter="";
     var se=document.getElementById("search"); if(se) se.value="";
     render();
     animateList(dir);
@@ -3162,7 +3272,7 @@
     rd.readAsText(f);
   });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, doneYear:doneYear, computeYearlyTotals:computeYearlyTotals, buildYearGauges:buildYearGauges, computeRecentMonths:computeRecentMonths, buildMonthGauges:buildMonthGauges, nextMilestone:nextMilestone, lastDoneEntry:lastDoneEntry, render:render, coverSessionCache:coverSessionCache, coverCacheKey:coverCacheKey, sortKeyFor:sortKeyFor, openDescRefreshSheet:openDescRefreshSheet, ensureDesc:ensureDesc, fetchGoogleByIsbn:fetchGoogleByIsbn, gbFetch:gbFetch, setHeroMotionVariant:setHeroMotionVariant, countUpHero:countUpHero, renderHeroStat:renderHeroStat, getExtRecs:getExtRecs, loadExtRecs:loadExtRecs, extRecsNeedRefresh:extRecsNeedRefresh, fetchExtRecsCategoryBased:fetchExtRecsCategoryBased, fetchExtRecsAI:fetchExtRecsAI, genreFilterFor:genreFilterFor, loadGenreFilter:loadGenreFilter, renderGenreFilterBox:renderGenreFilterBox };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, doneYear:doneYear, computeYearlyTotals:computeYearlyTotals, buildYearGauges:buildYearGauges, computeRecentMonths:computeRecentMonths, buildMonthGauges:buildMonthGauges, nextMilestone:nextMilestone, lastDoneEntry:lastDoneEntry, render:render, coverSessionCache:coverSessionCache, coverCacheKey:coverCacheKey, sortKeyFor:sortKeyFor, openDescRefreshSheet:openDescRefreshSheet, ensureDesc:ensureDesc, fetchGoogleByIsbn:fetchGoogleByIsbn, gbFetch:gbFetch, setHeroMotionVariant:setHeroMotionVariant, countUpHero:countUpHero, renderHeroStat:renderHeroStat, getExtRecs:getExtRecs, loadExtRecs:loadExtRecs, extRecsNeedRefresh:extRecsNeedRefresh, fetchExtRecsCategoryBased:fetchExtRecsCategoryBased, fetchExtRecsAI:fetchExtRecsAI, genreFilterFor:genreFilterFor, loadGenreFilter:loadGenreFilter, renderGenreFilterBox:renderGenreFilterBox, getBizRanking:getBizRanking, fetchBizRanking:fetchBizRanking, loadBizRanking:loadBizRanking, bizRankNeedsRefresh:bizRankNeedsRefresh, bizRankMonthKey:bizRankMonthKey };
 
   render();
 })();
