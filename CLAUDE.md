@@ -1,6 +1,6 @@
 # Booskill（読書管理ツール）｜Claude Code 引き継ぎ用 CLAUDE.md
 
-最終更新：2026-10-18（§5-7 ダブルタップズーム無効化／§5-8 積読タブのジャンル絞り込みチップを追加・本番反映済み。GitHub Pushはユーザー側で実施待ち）
+最終更新：2026-11-03（§5-9 経営者向けビジネス書ランキング／§5-10 読んだ本タブの月別グラフでの絞り込みを追加・本番反映済み。GitHub Pushはユーザー側で実施待ち）
 公開URL：https://horikosu.github.io/dokusho-tracker/
 リポジトリ：https://github.com/HORIKOSU/dokusho-tracker（Public／GitHub Pages・main・/root）
 
@@ -43,6 +43,7 @@
 | `gemini_api_key` / `gemini_model` | AI分類用キー（任意） |
 | `dokusho_extrecs_v1` | 「新しく出会う本」の提案キャッシュ（`{sig, items, at}`。7日で作り直し） |
 | `dokusho_genrefilter_v1` | 積読タブ等のジャンル絞り込み設定（タブ名→ジャンルキー。空文字=すべて） |
+| `dokusho_bizranking_v1` | 経営者向けビジネス書ランキングのキャッシュ（`{monthKey, items, at}`。月が変わると作り直す） |
 
 book の主なフィールド：`id, isbn, title, author, publisher, pubdate, cover, status('want'|'stack'|'reading'|'done'), addedAt, updatedAt, source, memo, rating, priority(1〜5・want/stackのみ), history:[{status,at}], catz, desc, pages, genre, bizskill`
 - `history` は最大200件。無い古いデータは `ensureHistory` が `updatedAt` から補完する。
@@ -108,6 +109,23 @@ book の主なフィールド：`id, isbn, title, author, publisher, pubdate, co
 - 他のタブ（読みたい本・読んでる本・読んだ本）には表示しない（スコープはユーザーの依頼どおり積読タブのみ）。
 - Playwrightで検証：チップ表示・絞り込み件数・並び替えとの併用・タブ往復後の保持・「すべて」での解除・0件時の案内文を確認。既存の一覧・並び替え・他タブの表示に影響がないことも確認済み。
 - 261018に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
+
+### 5-9. 経営者向け ビジネス書ランキング（261031）
+- ユーザーから「定期的に経営者向けのビジネス書ランキングを表示させることできる？」と相談。実在の売上ランキングAPIは無料で安定取得できないため、方式を確認した上で「AI（Gemini）が選ぶおすすめTOPリスト」「スキル画面に新セクション」「1ヶ月に1回更新」で実装。
+- スキル画面（`openSkillSheet`）の月別読了冊数グラフの下に新セクション「経営者向け ビジネス書ランキング」を追加（`buildBizRankingHTML`）。Geminiに「経営者・マネジメント層が読むべき本10冊」をJSON形式で提案させ、1冊ずつGoogle Booksで実在確認（`titleLooksSame`）した上で表示。架空のタイトルは自動で除外する（「新しく出会う本」8-11と同じ取り違え防止の考え方）。
+- キャッシュは`dokusho_bizranking_v1`に`{monthKey, items, at}`で保存。月が変わったときだけ作り直す（`bizRankNeedsRefresh`）。Geminiキー未設定の場合は生成せず、設定を促す案内文のみ表示（毎回のリトライはしない）。
+- カードをタップすると既存の`presentFound`（どの棚に入れますか）が開き、そのまま追加できる（新しい追加ロジックは作らず既存を再利用）。
+- ユーザーの読書傾向とは無関係な一般向けランキングのため、「新しく出会う本」と違い既存蔵書の除外（owned check）はしていない。
+- Playwrightで検証：キー未設定時の案内表示、キー設定時のランキング生成・実在確認・架空タイトル除外、月次キャッシュ、タップでの追加シート起動を確認済み。既存のカバレッジ・次に伸ばすなら・新しく出会う本セクションへの影響なし。
+- 261103に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
+
+### 5-10. 読んだ本タブ：月別グラフでの絞り込み（261103）
+- ユーザーから「月のタブを押すとその月に読んだ本だけソートするようにして」と依頼。対象を確認したところ「読んだ本」タブの月別グラフ（棒グラフ）を指すとのこと。
+- 従来は棒をタップすると別画面（スキル詳細ページ・`openSkillDetail`）に遷移していたが、画面遷移せず「読んだ本」タブ内でその場に絞り込むよう変更。タップした月の棒がハイライトされ、一覧がその月に読み終えた本だけになる。同じ月をもう一度タップ、またはグラフ下の「すべて表示に戻す」リンクで解除。
+- 実装：`state.doneMonthFilter`（タブ切替時にリセット、永続化はしない）。`render()`で検索語・ステータスの絞り込みの後、ジャンル絞り込み（積読タブ）と同様の位置で`doneMonthKey(b)===state.doneMonthFilter`によるフィルタを適用。`buildMonthlyChart`に`activeKey`引数を追加してハイライト表示に対応。
+- スキル画面側の月別グラフ（`renderSkillBody`内、`openSkillDetail('month',…)`で別画面に遷移する動き）は変更していない。同じ関数`buildMonthlyChart`を使うが、こちらは`activeKey`を渡さないため見た目はそのまま。
+- Playwrightで検証：絞り込み・同じ月の再タップでの解除・「すべて表示に戻す」リンク・タブ往復時のリセット・並び替えとの併用・0件時の案内表示を確認済み。既存の積読ジャンル絞り込み・スキル画面への影響なし。
+- 261103に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
 
 ## 6. 開発・検証のしかた
 - 共有シート：`openSheet(html)` / `closeSheet()`（`#overlay` / `#sheet` を共用）。
