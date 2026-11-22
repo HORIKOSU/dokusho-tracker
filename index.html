@@ -636,17 +636,28 @@
   }
 
   /* ---------- Skill dashboard (from 読んだ本) ---------- */
+  // 261122：ユーザー依頼で8ジャンルを変更。「IT・技術」を廃止して「AI」に、
+  // 「マーケ・営業」を「マーケティング」と「営業」に分割、新たに「コンサル」を追加。
+  // レーダーチャート・ジャンル別カバレッジ・積読/読みたい本の絞り込みチップなど、
+  // このSKILLS配列を参照する画面はすべて配列をそのまま反復する作りのため、
+  // 項目数が増えても個別の対応コードは不要（buildRadar等はSKILLS.lengthを使う）。
   var SKILLS=[
-    {key:'business', label:'ビジネス・経営', short:'経営',   icon:'💼', color:'#b5713f'},
-    {key:'it',       label:'IT・技術',      short:'IT',     icon:'💻', color:'#5b8fb0'},
-    {key:'marketing',label:'マーケ・営業',  short:'マーケ', icon:'📣', color:'#c98a3a'},
-    {key:'design',   label:'デザイン',      short:'デザイン',icon:'🎨', color:'#c56b8a'},
-    {key:'money',    label:'お金・投資',    short:'お金',   icon:'💰', color:'#4c9a76'},
+    {key:'business', label:'ビジネス・経営', short:'経営',     icon:'💼', color:'#b5713f'},
+    {key:'consult',  label:'コンサル',      short:'コンサル', icon:'🧩', color:'#a35d2e'},
+    {key:'marketing',label:'マーケティング',short:'マーケ',   icon:'📣', color:'#c98a3a'},
+    {key:'sales',    label:'営業',          short:'営業',     icon:'🤝', color:'#c2553f'},
+    {key:'ai',       label:'AI',            short:'AI',       icon:'🤖', color:'#5b8fb0'},
+    {key:'design',   label:'デザイン',      short:'デザイン', icon:'🎨', color:'#c56b8a'},
+    {key:'money',    label:'お金・投資',    short:'お金',     icon:'💰', color:'#4c9a76'},
     {key:'self',     label:'自己啓発',      short:'自己啓発',icon:'🌱', color:'#8a9a4c'},
-    {key:'liberal',  label:'教養・科学',    short:'教養',   icon:'📚', color:'#7a6cc0'},
-    {key:'novel',    label:'文学・小説',    short:'文学',   icon:'📖', color:'#b06a4f'}
+    {key:'liberal',  label:'教養・科学',    short:'教養',     icon:'📚', color:'#7a6cc0'},
+    {key:'novel',    label:'文学・小説',    short:'文学',     icon:'📖', color:'#b06a4f'}
   ];
-  function skillOf(k){ for(var i=0;i<SKILLS.length;i++){ if(SKILLS[i].key===k) return SKILLS[i]; } return SKILLS[6]; }
+  function skillOf(k){
+    for(var i=0;i<SKILLS.length;i++){ if(SKILLS[i].key===k) return SKILLS[i]; }
+    for(var j=0;j<SKILLS.length;j++){ if(SKILLS[j].key==='liberal') return SKILLS[j]; }
+    return SKILLS[0];
+  }
   // Keyword match used by classifyBook/mapToBizSkill. Plain substring search (indexOf) is fine
   // for Japanese keywords, but short ASCII keywords like "pr","ux","dx","fx","sf","lean" false-hit
   // inside unrelated words (PRINCIPLES, Pragmatic, Clean Code, etc.) when scanned as a substring.
@@ -663,9 +674,11 @@
   // keyword rules for the free-text (title/desc) scan; every hit is counted and the
   // category with the most hits wins (see classifyBook) -- fallback = liberal
   var SKILL_RULES=[
-    {key:'it',        kw:['computer','programming','software','engineer','technolog','information technology','テクノロジー','プログラ','エンジニア','ソフトウェア','python','javascript','機械学習','人工知能','ディープラーニング','クラウド','アルゴリズム','データサイエンス','データ分析','情報技術','dx','デジタル変革','ノーコード','no-code','it業界','システム開発']},
+    {key:'ai',        kw:['computer','programming','software','engineer','technolog','information technology','テクノロジー','プログラ','エンジニア','ソフトウェア','python','javascript','機械学習','人工知能','ディープラーニング','クラウド','アルゴリズム','データサイエンス','データ分析','情報技術','dx','デジタル変革','ノーコード','no-code','it業界','システム開発','生成ai','chatgpt','claude','gemini','copilot','llm','大規模言語モデル']},
     {key:'money',     kw:['investing','investment','finance','financial','stock market','投資','株式','資産運用','金融','会計','税金','ファイナンス','マネー','年金','資産形成','億り','家計','nisa','ideco','投資信託','暗号資産','仮想通貨','ビットコイン','fx','節約','副収入']},
-    {key:'marketing', kw:['marketing','advertising','branding','マーケティング','営業','広告','ブランディング','販促','セールス','集客','コピーライティング','sns運用','pr','ec事業','ecサイト','グロースハック','コンテンツマーケティング','広報']},
+    {key:'marketing', kw:['marketing','advertising','branding','マーケティング','広告','ブランディング','販促','集客','コピーライティング','sns運用','pr','ec事業','ecサイト','グロースハック','コンテンツマーケティング','広報']},
+    {key:'sales',     kw:['sales','selling','営業','セールス','商談','クロージング','飛び込み営業','法人営業','インサイドセールス','営業力','営業スキル','顧客開拓','訪問営業','御用聞き営業']},
+    {key:'consult',   kw:['コンサル','コンサルティング','consulting','consultant','ロジカルシンキング','論理的思考','フレームワーク思考','仮説思考','構造化','問題解決','ケース面接','ケーススタディ','戦略コンサル','経営コンサル']},
     {key:'design',    kw:['design','graphic','photograph','illustrat','typography','デザイン','クリエイティブ','写真','イラスト','建築','フォント','タイポグラフィ','ui/ux','アート','デザイン思考','プロダクトデザイン','ux','ui']},
     {key:'novel',     kw:['fiction','novel','literature','poetry','小説','文学','物語','エッセイ','随筆','ミステリー','詩集','恋愛小説','ファンタジー','短編集','sf']},
     {key:'self',      kw:['self-help','self help','psychology','habit','motivation','mindfulness','自己啓発','習慣','心理','マインドセット','幸福','生き方','思考法','メンタル','モチベーション','人間関係','コミュニケーション','習慣化','時間管理','集中力','ライフハック']},
@@ -675,13 +688,18 @@
   // Google Books' `categories` field (e.g. "Business & Economics / Marketing / General") is a
   // much stronger, structured signal than scanning raw title/description text, so it's checked
   // first -- most-specific subcategory phrases before the broad top-level category name.
+  // 261122：businessの判定条件から汎用的な「business & economics」を外した。Google Booksは
+  // ビジネス書のほぼ全てにこの汎用カテゴリを付けるため、残したままだと「コンサル」「営業」等の
+  // より具体的なテーマがキーワード採点（SKILL_RULES）に辿り着く前にbusinessへ即決してしまう
+  // （261012に発覚したAI活用本の誤判定と同じ構造の問題）。具体的なサブカテゴリのみ残す。
   var CATEGORY_RULES=[
     {key:'money',     kw:['personal finance','investing','investment','money management']},
-    {key:'marketing', kw:['marketing','sales & selling','advertising & promotion']},
+    {key:'marketing', kw:['marketing','advertising & promotion']},
+    {key:'sales',     kw:['sales & selling']},
     {key:'design',    kw:['architecture','photography','graphic design']},
     {key:'self',      kw:['self-help','body, mind & spirit','health & fitness']},
-    {key:'business',  kw:['management','leadership','entrepreneurship','careers','business & economics']},
-    {key:'it',        kw:['computers','artificial intelligence','programming','technology & engineering']},
+    {key:'business',  kw:['management','leadership','entrepreneurship','careers']},
+    {key:'ai',        kw:['computers','artificial intelligence','programming','technology & engineering']},
     {key:'novel',     kw:['fiction','literary collections','literary criticism','poetry','drama','comics & graphic novels']},
     {key:'liberal',   kw:['mathematics','philosophy','religion','social science','political science','biography & autobiography','education','medical','science']}
   ];
@@ -698,25 +716,69 @@
     if(b.aiGenre && b.aiVer===AI_VER) return b.aiGenre;
     var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.desc||'')).toLowerCase();
     // AIそのものが主題の本（「ChatGPT仕事術」「Claude活用術」等）は、Google Booksの
-    // カテゴリより先にIT・技術へ判定する。例えば「Claude仕事術」はGoogle Books側のカテゴリが
+    // カテゴリより先にAIへ判定する。例えば「Claude仕事術」はGoogle Books側のカテゴリが
     // 「Business & Economics」になっていることが多く、catzを先に見るとビジネスに判定されて
-    // しまっていた（261012にユーザー指摘で判明）。「AI時代」等の弱い修飾語では発動しないよう、
-    // 固有のAI関連語・主要ツール名に限定する。
+    // しまっていた（261012にユーザー指摘で判明。261122に「IT・技術」から「AI」ジャンルへ改名）。
+    // 「AI時代」等の弱い修飾語では発動しないよう、固有のAI関連語・主要ツール名に限定する。
     if(hay.indexOf('生成ai')>=0 || hay.indexOf('chatgpt')>=0 || hay.indexOf('人工知能')>=0 || hay.indexOf('機械学習')>=0 || hay.indexOf('ディープラーニング')>=0 || hay.indexOf('大規模言語モデル')>=0
-      || kwHit(hay,'claude') || kwHit(hay,'gemini') || kwHit(hay,'copilot') || kwHit(hay,'gpt') || kwHit(hay,'llm')) return 'it';
+      || kwHit(hay,'claude') || kwHit(hay,'gemini') || kwHit(hay,'copilot') || kwHit(hay,'gpt') || kwHit(hay,'llm')) return 'ai';
     var byCat = classifyByCategory(b.catz);
     if(byCat) return byCat;
     // count keyword hits per category and take the strongest match, rather than the first
     // rule (in array order) that happens to match -- avoids a single incidental keyword
     // from an unrelated category winning over a book's true, more-repeated topic
+    // 261122：ここはタイトル・内容紹介だけを見るスキャン（SKILL_RULESのコメントどおり）であるべき
+    // なのに、catzも混ぜたhayを使っていたため、businessのキーワードに含む素の英単語
+    // "business"/"economics" が、Google Booksの汎用カテゴリ文字列「Business & Economics」
+    // 自身に常に一致してしまい、他ジャンルの具体的なキーワード1件よりbusinessが
+    // 不当に高得点になる問題があった（コンサル・営業分割を機に発覚）。catz自体の判定は
+    // 直前のclassifyByCategoryで既に済んでいるので、ここではcatzを含めない。
+    var hayFree=((b.title||'')+' '+(b.desc||'')).toLowerCase();
     var bestKey=null, bestScore=0;
     for(var i=0;i<SKILL_RULES.length;i++){
       var kw=SKILL_RULES[i].kw, cnt=0;
-      for(var j=0;j<kw.length;j++){ if(kwHit(hay, kw[j])) cnt++; }
+      for(var j=0;j<kw.length;j++){ if(kwHit(hayFree, kw[j])) cnt++; }
       if(cnt>bestScore){ bestScore=cnt; bestKey=SKILL_RULES[i].key; }
     }
-    return bestKey || 'liberal';
+    if(bestKey) return bestKey;
+    // 261122：キーワードが一つも当たらなかったときだけ、Google Booksの汎用カテゴリ
+    // 「Business & Economics」を最後の手がかりとして使う（＝ビジネス書のほぼ全てに
+    // 付く汎用カテゴリなので、コンサル・営業などの具体的なキーワードより先に見てしまうと
+    // それらに一生辿り着けなくなる。261012のAI活用本と同じ構造の問題なので、優先順位を
+    // 「キーワード一致 ＞ 汎用カテゴリ」に変更。実データの71%を占める「タイトルのみ・
+    // カテゴリ無し」の本には影響しない）。
+    var catzLow=String(b.catz||'').toLowerCase();
+    if(catzLow.indexOf('business & economics')>=0) return 'business';
+    return 'liberal';
   }
+  // 261122：積読・読みたい本タブの絞り込みチップ専用。「ビジネス・経営」の中から
+  // 「人事」と「採用」を別々のテーマとして独立させたいという依頼で追加。classifyBook自体は
+  // 読んだ本のスキル集計・カバレッジマップ等でも使われるため影響範囲を絞り、
+  // この絞り込みチップ表示・判定だけで使うラッパー関数として分離する。
+  // 「人事」＝制度・評価・組織づくりなど人事機能全般、「採用」＝採用活動そのもの、で
+  // キーワードを分け、両方に当てはまる本はヒット数が多い方のテーマに割り振る
+  // （同数なら「採用」を優先＝より具体的なテーマを優先）。
+  var RECRUIT_THEME_KW=['採用','採用活動','中途採用','新卒採用','採用戦略','採用マーケティング','面接','選考','recruiting','recruitment'];
+  var HR_THEME_KW=['人事','human resource','human resources',' hr ','タレントマネジメント','talent management',
+    '人材育成','人材開発','人材戦略','人材マネジメント','組織開発','人事評価','評価制度','人事制度'];
+  function themeFilterKeyOf(b){
+    var g = classifyBook(b);
+    if(g !== 'business') return g;
+    var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.desc||'')).toLowerCase();
+    var rScore=0, hScore=0;
+    for(var i=0;i<RECRUIT_THEME_KW.length;i++){ if(kwHit(hay, RECRUIT_THEME_KW[i])) rScore++; }
+    for(var j=0;j<HR_THEME_KW.length;j++){ if(kwHit(hay, HR_THEME_KW[j])) hScore++; }
+    if(rScore===0 && hScore===0) return 'business';
+    return rScore>=hScore ? 'saiyo' : 'hr';
+  }
+  // 絞り込みチップの並び順。SKILLSの「ビジネス・経営」の直後に「人事」「採用」を独立表示する
+  var THEME_CHIPS=(function(){
+    var out=[]; SKILLS.forEach(function(s){
+      out.push(s);
+      if(s.key==='business'){ out.push({key:'hr', label:'人事', short:'人事'}); out.push({key:'saiyo', label:'採用', short:'採用'}); }
+    });
+    return out;
+  })();
   function computeSkills(books){
     var groups={}; SKILLS.forEach(function(s){ groups[s.key]=[]; });
     var total=0;
@@ -1978,13 +2040,55 @@
     }).catch(function(){ return null; });
   }
   // ISBN -> candidate list (openBD + Google), for "候補を出す" flow
+  // 261114：openBDとGoogle Booksが同じISBNを指している場合は「別の本の候補」ではなく
+  // 「同じ本についての情報源違い」なので、1件にまとめて出すよう修正。
+  // （修正前は毎回必ずopenBD版・Google版の2件が出て、見た目の出版社・発売年だけが
+  // 微妙に違う同じ本を毎回選ばされる不具合だった）。
+  // 261121追記：ISBNが完全一致しなくても、「このISBNを検索して出てきたGoogle側の結果」で
+  // タイトルが明らかに同じ本（titleLooksSame。表紙の取り違え防止と同じ判定）なら、
+  // 別版・プレオーダー登録違いなどでISBN表記が食い違っているだけとみなし、こちらもまとめる。
+  // （実例：openBD版は著者名に生年が付き副題に英訳が入るが、Google側の別レコードは
+  // 出版社情報が無いだけの同一書籍、というケースでISBNが一致せず2件に割れていた）
+  // 本当に別の本（タイトルも違う）のときだけ、追加の候補として別行に残す。
   function getIsbnCandidates(isbn13){
-    var out=[], seen={};
-    function add(m){ if(!m || !m.title) return; var k=(m.isbn||"")+"|"+m.title; if(seen[k]) return; seen[k]=1; if(!m.isbn) m.isbn=isbn13; out.push(m); }
-    return fetchOpenBD(isbn13).then(function(o){ add(o); }, function(){})
+    var primary=null, extra=[], seen={};
+    function extraKey(m){ return normTitleForMatch(m.title); }
+    function addExtra(m){
+      if(!m || !m.title) return;
+      var k=extraKey(m);
+      if(seen[k]) return;
+      if(primary && titleLooksSame(primary.title, m.title)){ mergeIntoPrimary(m); return; }
+      for(var i=0;i<extra.length;i++){ if(titleLooksSame(extra[i].title, m.title)){ return; } }
+      seen[k]=1; if(!m.isbn) m.isbn=isbn13; extra.push(m);
+    }
+    function mergeIntoPrimary(m){
+      if(!primary.catz && m.catz) primary.catz=m.catz;
+      if(!primary.desc && m.desc) primary.desc=m.desc;
+      if(!primary.cover && m.cover) primary.cover=m.cover;
+      if(!primary.publisher && m.publisher) primary.publisher=m.publisher;
+      if(!primary.pubdate && m.pubdate) primary.pubdate=m.pubdate;
+      if(!primary.pages && m.pages) primary.pages=m.pages;
+    }
+    return fetchOpenBD(isbn13).then(function(o){
+      if(o && o.title){ primary=o; seen[extraKey(o)]=1; }
+    }, function(){})
       .then(function(){ return gbFetch("https://www.googleapis.com/books/v1/volumes?q=isbn:"+encodeURIComponent(isbn13)+"&country=JP"); })
-      .then(function(j){ if(j && j.items){ j.items.forEach(function(it){ add(volToMeta(it.volumeInfo||{})); }); } }, function(){})
-      .then(function(){ return out; });
+      .then(function(j){
+        if(!j || !j.items) return;
+        j.items.forEach(function(it){
+          var v=it.volumeInfo||{};
+          if(!v.title) return;
+          var m=volToMeta(v);
+          var isbnMatch = allIsbn13s(v).indexOf(isbn13)>=0;
+          if(!primary){ m.isbn=m.isbn||isbn13; primary=m; seen[extraKey(m)]=1; return; }
+          if(isbnMatch || titleLooksSame(primary.title, m.title)){ mergeIntoPrimary(m); return; }
+          addExtra(m);
+        });
+      }, function(){})
+      .then(function(){
+        var out=[]; if(primary) out.push(primary); extra.forEach(function(m){ out.push(m); });
+        return out;
+      });
   }
 
   /* ---------- Book metadata: keyword / title search (candidates) ---------- */
@@ -2067,9 +2171,9 @@
     }
 
     renderGenreFilterBox(items);
-    if(state.tab==="stack"){
+    if(state.tab==="stack" || state.tab==="want"){
       var gf = genreFilterFor(state.tab);
-      if(gf){ items = items.filter(function(b){ return classifyBook(b)===gf; }); }
+      if(gf){ items = items.filter(function(b){ return themeFilterKeyOf(b)===gf; }); }
     }
 
     items.sort(function(a,b){ return compareItemsForTab(a,b,state.tab); });
@@ -2081,8 +2185,8 @@
     if(!items.length){
       var st=statusOf(state.tab);
       var e=document.createElement("div"); e.className="empty";
-      if(state.tab==="stack" && genreFilterFor(state.tab)){
-        e.innerHTML='<div class="big">'+st.icon+'</div><p><b>このジャンルの積読本はありません</b></p>'+
+      if((state.tab==="stack" || state.tab==="want") && genreFilterFor(state.tab)){
+        e.innerHTML='<div class="big">'+st.icon+'</div><p><b>このテーマの'+st.label+'はありません</b></p>'+
           '<p>上の「すべて」を押すと絞り込みを解除できます</p>';
       }else if(state.tab==="done" && state.doneMonthFilter){
         e.innerHTML='<div class="big">'+st.icon+'</div><p><b>この月に読み終えた本はありません</b></p>'+
@@ -2095,15 +2199,15 @@
     }
     items.forEach(function(b){ listEl.appendChild(cardEl(b)); });
   }
-  // 積読タブ上部のジャンル絞り込みチップ。baseItems = タブ・検索語まで適用した後（ジャンル絞り込み前）の一覧
+  // 積読・読みたい本タブ上部のテーマ絞り込みチップ。baseItems = タブ・検索語まで適用した後（絞り込み前）の一覧
   function renderGenreFilterBox(baseItems){
     var box=document.getElementById("genreFilterBox"); if(!box) return;
-    if(state.tab!=="stack" || !baseItems.length){ box.style.display="none"; box.innerHTML=""; return; }
+    if((state.tab!=="stack" && state.tab!=="want") || !baseItems.length){ box.style.display="none"; box.innerHTML=""; return; }
     var counts={};
-    baseItems.forEach(function(b){ var g=classifyBook(b); counts[g]=(counts[g]||0)+1; });
+    baseItems.forEach(function(b){ var g=themeFilterKeyOf(b); counts[g]=(counts[g]||0)+1; });
     var cur=genreFilterFor(state.tab);
     var h='<div class="gf-chips"><button type="button" class="gf-chip'+(!cur?' on':'')+'" data-gf="">すべて<span class="gf-n"> '+baseItems.length+'</span></button>';
-    SKILLS.forEach(function(sk){
+    THEME_CHIPS.forEach(function(sk){
       if(!counts[sk.key]) return;
       h+='<button type="button" class="gf-chip'+(cur===sk.key?' on':'')+'" data-gf="'+sk.key+'">'+esc(sk.short||sk.label)+'<span class="gf-n"> '+counts[sk.key]+'</span></button>';
     });
