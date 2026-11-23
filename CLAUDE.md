@@ -205,6 +205,7 @@ book の主なフィールド：`id, isbn, title, author, publisher, pubdate, co
 - チップのクリック配線は`render()`内で`state.genreTrendKey`（新設のstateフィールド）を更新して再描画（`mb.querySelectorAll("[data-genre]")`）。月のタップ（`data-month`、`state.doneMonthFilter`）は上の`buildMonthlyChart`と共通の仕組みで、ジャンル別の推移グラフ側の点もこのカードが同じ`activeKey`を受け取って連動ハイライトする。
 - Playwrightで検証：チップ表示（冊数バッジ付き・多い順）、初期選択、チップタップでの切り替え、月タップで両グラフが同じ月をハイライトすること、を確認済み。コンソールエラーなし。
 - 261123に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
+- 追記（261123）：ユーザーから「ジャンルバランスと下の本の表示の余白が小さい」と指摘。`#monthlyBox`（月別グラフ＋ジャンル別の推移カードの入れ物）に`margin-bottom:14px`を追加し、下の本一覧グリッド（`.grid#list`）との間に余白を確保。本番反映済み。
 
 ## 6. 開発・検証のしかた
 - 共有シート：`openSheet(html)` / `closeSheet()`（`#overlay` / `#sheet` を共用）。
