@@ -215,6 +215,9 @@
     border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;white-space:nowrap;flex:none}
   #genreFilterBox .gf-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
   #genreFilterBox .gf-chip .gf-n{opacity:.75;font-weight:700}
+  /* 読んだ本タブ：ジャンル別の推移カードのジャンル切り替えチップ（横スクロール） */
+  .hstat-genre-chips{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;margin:0 0 10px;padding-bottom:2px}
+  .hstat-genre-chips .cov-chip{white-space:nowrap;flex:none}
   .cov2{display:flex;flex-direction:column}
   .cd{border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:6px;overflow:hidden}
   .cd.open{border-color:#d9a3a0}
@@ -1312,6 +1315,68 @@
     svg+='</svg>';
     return svg;
   }
+  // 261123：「読んだ本」タブに「ジャンルバランスの推移」を追加。ユーザーから「カテゴリータブで月別の推移もわかるように」と
+  // 依頼を受け、月ごとのジャンル構成を積み上げ棒グラフ（直近12か月、色分けはジャンルごと）で表示する。
+  function computeMonthlyGenre(books, months){
+    months=months||12;
+    var now=new Date(), buckets=[];
+    for(var i=months-1;i>=0;i--){
+      var d=new Date(now.getFullYear(), now.getMonth()-i, 1);
+      buckets.push({key:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label:(d.getMonth()+1)+'月', showYear:(d.getMonth()===0), year:d.getFullYear(), counts:{}, total:0});
+    }
+    var idx={}; buckets.forEach(function(b,i){ idx[b.key]=i; });
+    (books||[]).forEach(function(b){
+      var k=doneMonthKey(b);
+      if(k!=null && idx[k]!=null){
+        var g=classifyBook(b);
+        var bucket=buckets[idx[k]];
+        bucket.counts[g]=(bucket.counts[g]||0)+1;
+        bucket.total++;
+      }
+    });
+    return buckets;
+  }
+  // 261123：「ジャンルバランスの推移（積み上げ棒）」から「特定ジャンルの月別推移」に変更。
+  // ユーザーから「ジャンルバランスではなく特定のジャンルの月別推移を表示するようにして」と依頼。
+  // 上部にジャンル切り替えチップ（.cov-chipを流用）を置き、選んだジャンル1つだけの月別冊数を
+  // 読書ペース推移・月別読了冊数と同じ折れ線グラフのスタイルで表示する。
+  function buildGenreTrendCard(books, selectedGenre, activeKey){
+    var buckets=computeMonthlyGenre(books,12);
+    var overallCounts={};
+    buckets.forEach(function(bk){ Object.keys(bk.counts).forEach(function(g){ overallCounts[g]=(overallCounts[g]||0)+bk.counts[g]; }); });
+    var head='<div class="hstat-card"><div class="hstat-h"><span class="hstat-dot"></span>ジャンル別の推移（直近12か月）</div>';
+    var sortedGenres=Object.keys(overallCounts).sort(function(a,b){ return overallCounts[b]-overallCounts[a]; });
+    if(!sortedGenres.length) return head+'<div class="hstat-empty">まだ記録がありません</div></div>';
+    var g = (selectedGenre && overallCounts[selectedGenre]!=null) ? selectedGenre : sortedGenres[0];
+    var chips='<div class="hstat-genre-chips">';
+    sortedGenres.forEach(function(k){
+      var sk=skillOf(k);
+      chips+='<button type="button" class="cov-chip'+(k===g?' on':'')+'" data-genre="'+k+'">'+esc(sk.short||sk.label)+' <span style="opacity:.75">'+overallCounts[k]+'</span></button>';
+    });
+    chips+='</div>';
+    var maxc=1; buckets.forEach(function(bk){ var c=bk.counts[g]||0; if(c>maxc) maxc=c; });
+    var n=buckets.length, w=320, h=120, padT=24, padB=22, padX=16;
+    var innerH=h-padT-padB, stepX=n>1 ? (w-padX*2)/(n-1) : 0;
+    var color=skillOf(g).color, inkColor=getVar('--ink'), mutedColor=getVar('--muted');
+    var pts=buckets.map(function(bk,i){
+      var c=bk.counts[g]||0;
+      return { x: padX+i*stepX, y: padT+innerH*(1-(c/maxc)), c:c, b:bk };
+    });
+    var path=pts.map(function(p,i){ return (i===0?'M':'L')+p.x.toFixed(1)+' '+p.y.toFixed(1); }).join(' ');
+    var svg='<svg viewBox="0 0 '+w+' '+h+'" width="100%" style="max-width:360px;display:block;margin:0 auto">';
+    svg+='<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+    pts.forEach(function(p){
+      var isCur=activeKey && p.b.key===activeKey;
+      svg+='<g data-month="'+p.b.key+'" style="cursor:pointer">';
+      svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="11" fill="transparent"/>';
+      svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isCur?4:3)+'" fill="'+(isCur?color:'#fff')+'" stroke="'+color+'" stroke-width="1.8"/>';
+      if(p.c>0){ svg+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" font-size="9.5" font-weight="800" fill="'+(isCur?color:inkColor)+'" text-anchor="middle">'+p.c+'</text>'; }
+      svg+='<text x="'+p.x.toFixed(1)+'" y="'+(h-6).toFixed(1)+'" font-size="8" font-weight="'+(isCur?'800':'400')+'" fill="'+(isCur?color:mutedColor)+'" text-anchor="middle">'+(p.b.showYear?"'"+String(p.b.year).slice(2)+"/":"")+esc(p.b.label)+'</text>';
+      svg+='</g>';
+    });
+    svg+='</svg>';
+    return head+chips+svg+'</div>';
+  }
   /* ---------- AI (Gemini) content-based classification ---------- */
   var GEMINI_MODELS=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash','gemini-2.5-flash-preview'];
   var AI_VER=6; // bump to force re-classification with an improved prompt
@@ -1742,7 +1807,7 @@
     }
   }
 
-  var state = { books: load(), tab:"want", q:"", view:"books", sortMode: loadSortMode(), genreFilter: loadGenreFilter(), doneMonthFilter:"" };
+  var state = { books: load(), tab:"want", q:"", view:"books", sortMode: loadSortMode(), genreFilter: loadGenreFilter(), doneMonthFilter:"", genreTrendKey:"" };
   state.books.forEach(ensureHistory);
   // 261123：「期待度」★は優先度★と2つあって紛らわしいとの指摘を受け、優先度★に一本化して撤去。
   // ごく短期間だけ存在したフィールドなので、入力済みの値があれば優先度側に引き継いでから消す。
@@ -2229,7 +2294,7 @@
         mb.innerHTML='<div class="cov-wrap mo-top"><div class="cov-head"><span class="cov-title">'+ic("calendar")+'月別 読了冊数</span><span class="cov-rate">直近12か月</span></div>'
           +buildMonthlyChart(computeMonthly(state.books,12), dmf)+'</div>'
           +(dmf ? '<div class="mo-filter-note">'+esc(dmfLabel)+'の本だけ表示中　<a href="#" id="moFilterClear">すべて表示に戻す</a></div>' : '')
-          +'<div style="margin-top:10px">'+buildGenreBalanceCard(state.books, dmf, dmfLabel)+'</div>';
+          +'<div style="margin-top:10px">'+buildGenreTrendCard(state.books, state.genreTrendKey, dmf)+'</div>';
         Array.prototype.forEach.call(mb.querySelectorAll("[data-month]"),function(el){
           el.onclick=function(){
             var k=el.dataset.month;
@@ -2239,6 +2304,12 @@
         });
         var clearEl=document.getElementById("moFilterClear");
         if(clearEl){ clearEl.onclick=function(e){ e.preventDefault(); state.doneMonthFilter=""; render(); }; }
+        Array.prototype.forEach.call(mb.querySelectorAll("[data-genre]"),function(el){
+          el.onclick=function(){
+            state.genreTrendKey = el.dataset.genre;
+            render();
+          };
+        });
       }else{
         mb.style.display="none"; mb.innerHTML="";
       }
