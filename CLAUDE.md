@@ -184,7 +184,7 @@ book の主なフィールド：`id, isbn, title, author, publisher, pubdate, co
 ### 5-16. ヒーローカード刷新：分割カード型（デザイン案C）（261123）
 - ユーザーから「シンプルにデータ分析ができるようにしたい」と相談。3つのデザイン案（A:ミニマル数値＋スパークライン／B:グラフ重視型／C:分割カード型）を画像で比較してもらい、案Cを採用。
 - 濃い色の`#heroStat`カードは「今月読んだ本」の数字・目標バーだけに絞り、本棚イラスト（`buildYearShelf`）と月チップ（`buildMonthGauges`）をやめた。代わりに、その下に新設した白背景の`#heroStatCards`（`.hstat-card`×3）を追加：
-  1. **読書ペースの推移**（`buildPaceCard`）：直近6か月の読了冊数を棒グラフ表示（`computeRecentMonths`を再利用）。今月を濃色でハイライト。
+  1. **読書ペースの推移**（`buildPaceCard`）：直近6か月の読了冊数を折れ線グラフ＋数値ラベルで表示（`computeRecentMonths`を再利用。261123に棒グラフから変更。ユーザーから「読書ペースの推移は折線で。数字も記載をして」と依頼）。SVGの`<path>`＋各点に`<circle>`、点の上に冊数、下に月ラベル。今月の点だけ濃色で塗りつぶし・ラベルも濃色。
   2. **ジャンルバランス**（`buildGenreBalanceCard`）：今年（`doneYear`基準）読んだ本を`classifyBook`で集計し、上位4ジャンル＋「その他」を積み上げバー＋凡例で表示。色は`SKILLS`配列の`color`をそのまま使用。
   3. **サマリー数値**（`buildSummaryCard`）：累計読了・月平均（`firstDoneAt`＝最初の読了日からの経過月数で割る）・継続月数（`computeStreakMonths`＝今月から遡って1冊以上読んだ月が連続している数。今月は0冊でもまだ月の途中なので継続を途切れさせない仕様）。
 - `buildYearShelf`・`buildMonthGauges`・`buildYearGauges`・`computeYearlyTotals`は関数自体は残したが、`renderHeroStat`からは呼ばなくなったため現在は未使用（死にコード。今後ヒーロー画面で本棚イラストが必要になったら再利用できる）。

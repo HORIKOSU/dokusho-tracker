@@ -136,11 +136,6 @@
   .hstat-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
   .hstat-h{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:10px}
   .hstat-h .hstat-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
-  .hstat-bars{display:flex;align-items:flex-end;gap:6px;height:48px}
-  .hstat-bars div{flex:1;background:var(--accent-soft);border-radius:4px 4px 0 0;min-height:3px}
-  .hstat-bars div.cur{background:var(--accent)}
-  .hstat-barlabels{display:flex;gap:6px;margin-top:4px}
-  .hstat-barlabels span{flex:1;text-align:center;font-size:10px;color:var(--muted);font-weight:700}
   .hstat-stack{display:flex;height:14px;border-radius:999px;overflow:hidden}
   .hstat-stack-legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px;font-size:10.5px;color:var(--muted);font-weight:700}
   .hstat-stack-legend i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
@@ -2403,18 +2398,27 @@
       +'<div class="hshelf-body">'+svg+msg+'</div></div>';
   }
   // 261123：ヒーローカード刷新（デザイン案C）用の3枚の白カード。
-  // ①読書ペースの推移（直近6か月の棒グラフ）
+  // ①読書ペースの推移（直近6か月の折れ線グラフ。261123：棒グラフ→折れ線へ、数値ラベル付きで変更）
   function buildPaceCard(books){
     var buckets=computeRecentMonths(books,6);
     var maxc=1; buckets.forEach(function(b){ if(b.count>maxc) maxc=b.count; });
-    var bars='', labels='';
-    buckets.forEach(function(b,i){
-      var h=Math.max(6, Math.round(b.count/maxc*100));
-      bars+='<div style="height:'+h+'%"'+(i===buckets.length-1?' class="cur"':'')+'></div>';
-      labels+='<span>'+esc(b.label)+'</span>';
+    var n=buckets.length, w=320, h=120, padT=24, padB=22, padX=16;
+    var innerH=h-padT-padB, stepX=n>1 ? (w-padX*2)/(n-1) : 0;
+    var pts=buckets.map(function(b,i){
+      return { x: padX+i*stepX, y: padT+innerH*(1-(b.count/maxc)), b:b };
     });
-    return '<div class="hstat-card"><div class="hstat-h"><span class="hstat-dot"></span>読書ペースの推移（直近6か月）</div>'
-      +'<div class="hstat-bars">'+bars+'</div><div class="hstat-barlabels">'+labels+'</div></div>';
+    var lineColor=getVar('--accent'), curColor=getVar('--accent-dk'), inkColor=getVar('--ink'), mutedColor=getVar('--muted');
+    var path=pts.map(function(p,i){ return (i===0?'M':'L')+p.x.toFixed(1)+' '+p.y.toFixed(1); }).join(' ');
+    var svg='<svg viewBox="0 0 '+w+' '+h+'" width="100%" style="max-width:360px;display:block;margin:0 auto">';
+    svg+='<path d="'+path+'" fill="none" stroke="'+lineColor+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    pts.forEach(function(p,i){
+      var isCur=(i===pts.length-1);
+      svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isCur?4.5:3.5)+'" fill="'+(isCur?curColor:'#fff')+'" stroke="'+lineColor+'" stroke-width="2"/>';
+      svg+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-10).toFixed(1)+'" font-size="11" font-weight="800" fill="'+(isCur?curColor:inkColor)+'" text-anchor="middle">'+p.b.count+'</text>';
+      svg+='<text x="'+p.x.toFixed(1)+'" y="'+(h-5).toFixed(1)+'" font-size="9.5" font-weight="'+(isCur?'800':'400')+'" fill="'+(isCur?curColor:mutedColor)+'" text-anchor="middle">'+esc(p.b.label)+'</text>';
+    });
+    svg+='</svg>';
+    return '<div class="hstat-card"><div class="hstat-h"><span class="hstat-dot"></span>読書ペースの推移（直近6か月）</div>'+svg+'</div>';
   }
   // ②ジャンルバランス（今年読んだ本の内訳。上位4ジャンル＋その他）
   function buildGenreBalanceCard(books){
