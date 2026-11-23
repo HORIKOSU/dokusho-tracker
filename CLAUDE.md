@@ -1,6 +1,6 @@
 # Booskill（読書管理ツール）｜Claude Code 引き継ぎ用 CLAUDE.md
 
-最終更新：2026-11-22（§5-11 ISBNスキャンの重複候補修正／§5-12 積読・読みたい本の「人事」「採用」絞り込みチップ分離／§5-13 ジャンル拡張（営業・コンサル追加、IT→AI）を追加・本番反映済み。GitHub Pushはユーザー側で実施待ち）
+最終更新：2026-11-23（§5-14 チーム・組織系キーワードを「人事」テーマに統合／§5-15 読みたい本の「期待度」★・検索/読み取り履歴／§5-16 ヒーローカード刷新（分割カード型）を追加・本番反映済み。GitHub Pushはユーザー側で実施待ち）
 公開URL：https://horikosu.github.io/dokusho-tracker/
 リポジトリ：https://github.com/HORIKOSU/dokusho-tracker（Public／GitHub Pages・main・/root）
 
@@ -44,8 +44,9 @@
 | `dokusho_extrecs_v1` | 「新しく出会う本」の提案キャッシュ（`{sig, items, at}`。7日で作り直し） |
 | `dokusho_genrefilter_v1` | 積読タブ等のジャンル絞り込み設定（タブ名→ジャンルキー。空文字=すべて） |
 | `dokusho_bizranking_v1` | 経営者向けビジネス書ランキングのキャッシュ（`{monthKey, items, at}`。月が変わると作り直す） |
+| `dokusho_scanhistory_v1` | ISBN手入力／バーコード・カメラ読み取りの履歴（`{v:1, items:[{isbn,title,cover,source,at}]}`。最大100件・261123〜） |
 
-book の主なフィールド：`id, isbn, title, author, publisher, pubdate, cover, status('want'|'stack'|'reading'|'done'), addedAt, updatedAt, source, memo, rating, priority(1〜5・want/stackのみ), history:[{status,at}], catz, desc, pages, genre, bizskill`
+book の主なフィールド：`id, isbn, title, author, publisher, pubdate, cover, status('want'|'stack'|'reading'|'done'), addedAt, updatedAt, source, memo, rating, priority(1〜5・want/stackのみ), expectLevel(1〜5・wantのみ・261123〜「期待度」), history:[{status,at}], catz, desc, pages, genre, bizskill`
 - `history` は最大200件。無い古いデータは `ensureHistory` が `updatedAt` から補完する。
 - 「読み終えた日」＝ history の最後の `done` エントリ（`lastDoneEntry` / `doneMonthKey(b)` → "YYYY-MM" / `doneYear(b)`）。月間・年間の集計はこれを基準にする。
 - 表紙の差し替えでは `updatedAt` を触らない（並び順や読了日に影響させない）。
@@ -153,6 +154,34 @@ book の主なフィールド：`id, isbn, title, author, publisher, pubdate, co
 - Playwrightで検証：コンサル・営業・AI・経営それぞれの分類、カテゴリ文字列に引きずられない回帰テスト、積読タブでのチップ順・絞り込み、スキル画面（レーダー・カバレッジ）の表示を確認済み。
 - 261122に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
 
+### 5-14. 積読・読みたい本タブ：チーム・組織系キーワードを「人事」テーマに統合（261123）
+- ユーザーから「チームとか組織については人事タブへ」と依頼。
+- `themeFilterKeyOf`専用の`HR_THEME_KW`に、チーム／チームビルディング／チームマネジメント／組織／組織づくり／組織論／組織文化／組織変革などのキーワードを追加。
+- あわせて、従来は`classifyBook`が「ビジネス・経営」と判定した本だけが人事/採用の振り分け対象だったが、「自己啓発」等に分類される本（例：「チームが機能するとはどういうことか」）でも、人事/採用キーワードが明確に当たれば人事/採用テーマを優先するよう`themeFilterKeyOf`を変更。影響範囲は積読・読みたい本の絞り込みチップのみ（`classifyBook`自体・スキル画面の集計には影響しない）。
+- 既知のトレードオフ：「チーム」という単語だけで判定するため、スポーツ・友人グループの「チーム」を扱う小説等が誤って人事タブに入る可能性がある（ユーザーに事前共有済み・体感10〜15%程度）。
+- Playwrightで検証：チーム・組織本が人事に、本来の採用本が採用に、純粋な経営書が経営のまま、を確認済み。
+- 261123に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
+
+### 5-15. 読みたい本の「期待度」★・検索/読み取り履歴（261123）
+- ユーザーから「読みたい本のレベルを登録できるようにしたい」「検索や読み取り履歴をつけたい」と依頼。AskUserQuestionで仕様を確認した上で実装。
+- **期待度★**：詳細シート（`openBookMenu`）の「優先度★」の下に、読みたい本（`status==='want'`）のときだけ表示される新しい★5段階「期待度」を追加。フィールドは`b.expectLevel`（0〜5）。既存の優先度★とは独立した別軸（期待度・モチベーションの強さ）。UIは`#detailExpect`・`data-expect`属性で、優先度★と同じトグル式（同じ星をもう一度タップで解除）。
+- **検索・読み取り履歴**：ISBNの手入力、またはバーコード/カメラ読み取りのたびに記録する履歴機能。「本を追加」シート最下部の「検索・読み取り履歴」リンクから開く。
+  - 保存先：`dokusho_scanhistory_v1`（`{v:1, items:[{isbn, title, cover, source:'manual'|'camera', at}]}`、最大100件、新しい順）。
+  - 記録タイミング：ISBN検索の実行時点（`runSearch`のISBN分岐）。棚に追加したかどうかは問わない。`openAddSheet(focusSearch, prefillIsbn, prefillSource)`の第3引数`prefillSource`で記録元を区別（カメラ読み取り＝`onDecode`→`openAddSheet(false, isbn)`は省略時'camera'扱い、手入力＝検索ボタン/Enter送信は'manual'、履歴一覧からの再検索は'history'＝二重記録を避けるため記録しない）。
+  - 履歴一覧（`openScanHistorySheet`）：タイトル（取得できていれば）・記録元・日時を表示。タップでそのISBNを再検索。「履歴を削除」で全削除可能。
+- Playwrightで検証：期待度★の5段階表示・保存・トグル解除・積読本には表示されないこと、手入力/カメラ読み取り双方での履歴記録と記録元の区別、履歴一覧からの再検索で二重記録しないこと、を確認済み。
+- 261123に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
+
+### 5-16. ヒーローカード刷新：分割カード型（デザイン案C）（261123）
+- ユーザーから「シンプルにデータ分析ができるようにしたい」と相談。3つのデザイン案（A:ミニマル数値＋スパークライン／B:グラフ重視型／C:分割カード型）を画像で比較してもらい、案Cを採用。
+- 濃い色の`#heroStat`カードは「今月読んだ本」の数字・目標バーだけに絞り、本棚イラスト（`buildYearShelf`）と月チップ（`buildMonthGauges`）をやめた。代わりに、その下に新設した白背景の`#heroStatCards`（`.hstat-card`×3）を追加：
+  1. **読書ペースの推移**（`buildPaceCard`）：直近6か月の読了冊数を棒グラフ表示（`computeRecentMonths`を再利用）。今月を濃色でハイライト。
+  2. **ジャンルバランス**（`buildGenreBalanceCard`）：今年（`doneYear`基準）読んだ本を`classifyBook`で集計し、上位4ジャンル＋「その他」を積み上げバー＋凡例で表示。色は`SKILLS`配列の`color`をそのまま使用。
+  3. **サマリー数値**（`buildSummaryCard`）：累計読了・月平均（`firstDoneAt`＝最初の読了日からの経過月数で割る）・継続月数（`computeStreakMonths`＝今月から遡って1冊以上読んだ月が連続している数。今月は0冊でもまだ月の途中なので継続を途切れさせない仕様）。
+- `buildYearShelf`・`buildMonthGauges`・`buildYearGauges`・`computeYearlyTotals`は関数自体は残したが、`renderHeroStat`からは呼ばなくなったため現在は未使用（死にコード。今後ヒーロー画面で本棚イラストが必要になったら再利用できる）。
+- Playwrightで検証：複数月・複数ジャンルのデータでの3カード表示、0冊の新規ユーザー状態（空の案内文）、継続月数の計算ロジックを確認済み。コンソールエラーなし。
+- 261123に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
+
 ## 6. 開発・検証のしかた
 - 共有シート：`openSheet(html)` / `closeSheet()`（`#overlay` / `#sheet` を共用）。
 - デバッグ用に `window.__dokusho` に主要関数・state が公開されている。
@@ -165,7 +194,8 @@ book の主なフィールド：`id, isbn, title, author, publisher, pubdate, co
 - 文字列置換で直すときは、置換前に `count==1` を assert する（同じ文字列が複数あると意図しない箇所を壊すため）。
 
 ## 7. 現在の状態
-- 直近の反映：ヒーローの数字とゲージの統合、「先月は〜でした」削除、本の形「中間」、ゆらゆら（全冊）、ぴょこっ＋キラッ＋カウントアップ、カバレッジマップ刷新（折りたたみ＋次に伸ばすなら＋絞り込み）、全部の表紙を取り直す、表紙の取り違え防止、下タブ・丸FAB、SVGアイコン化、4列グリッド、ロゴB案。
+- 直近の反映（261123）：ヒーローカードを分割カード型に刷新（本棚イラスト廃止→読書ペース推移・ジャンルバランス・サマリー数値の3カード／§5-16）、読みたい本の期待度★・検索/読み取り履歴（§5-15）、積読/読みたい本チップのチーム・組織→人事統合（§5-14）。
+- 直近の反映（それ以前）：ヒーローの数字とゲージの統合、「先月は〜でした」削除、本の形「中間」、ゆらゆら（全冊）、ぴょこっ＋キラッ＋カウントアップ、カバレッジマップ刷新（折りたたみ＋次に伸ばすなら＋絞り込み）、全部の表紙を取り直す、表紙の取り違え防止、下タブ・丸FAB、SVGアイコン化、4列グリッド、ロゴB案。
 - **分類精度改善（§8-2のバグ修正1〜3）は261010に本番反映・GitHub Commit→Pushまで完了**。チャット・Mac（`~/Documents/GitHub/dokusho-tracker/index.html`・`CLAUDE.md`）・Projects（`02.output/260805_読書管理ツール/index.html`＋クラウドミラー）の3か所とも更新済み。公開サイト（https://horikosu.github.io/dokusho-tracker/）への反映は数分以内。
 - リポジトリには `CLAUDE.md` も入っている。公開リポジトリに載せたくなければ Commit 対象から外してもらう（確認済みの懸念として伝えてある）。
 - 未実施の候補（要望はまだ出ていない）：「先月より◯冊少ないペース」の吹き出しを消すか、タップで本が跳ねる（ぽよん）、目標達成時の紙吹雪、背景の丸をふわふわ動かす。

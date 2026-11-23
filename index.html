@@ -129,6 +129,27 @@
   .hyg-ring-wrap svg{transform:rotate(-90deg)}
   .hyg-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
   .hyg-label{margin-top:4px;font-size:10px;font-weight:700;color:rgba(255,255,255,.85);text-align:center}
+  /* 261123：ヒーローカード「分割カード型」刷新（デザイン案C）。
+     濃い色の#heroStatは「今月読んだ本」の数字だけに絞り、読書ペース・ジャンルバランス・
+     サマリー数値はこの白背景の小カード群（#heroStatCards）に分離する。 */
+  .hstat-wrap{display:flex;flex-direction:column;gap:10px;margin:0 0 12px}
+  .hstat-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+  .hstat-h{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:10px}
+  .hstat-h .hstat-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+  .hstat-bars{display:flex;align-items:flex-end;gap:6px;height:48px}
+  .hstat-bars div{flex:1;background:var(--accent-soft);border-radius:4px 4px 0 0;min-height:3px}
+  .hstat-bars div.cur{background:var(--accent)}
+  .hstat-barlabels{display:flex;gap:6px;margin-top:4px}
+  .hstat-barlabels span{flex:1;text-align:center;font-size:10px;color:var(--muted);font-weight:700}
+  .hstat-stack{display:flex;height:14px;border-radius:999px;overflow:hidden}
+  .hstat-stack-legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px;font-size:10.5px;color:var(--muted);font-weight:700}
+  .hstat-stack-legend i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
+  .hstat-kpis{display:flex}
+  .hstat-kpi{flex:1;text-align:center;padding:2px 0;border-right:1px solid var(--line)}
+  .hstat-kpi:last-child{border-right:none}
+  .hstat-kpi b{display:block;font-size:17px;font-weight:900;color:var(--ink)}
+  .hstat-kpi span{display:block;font-size:10px;color:var(--muted);font-weight:700;margin-top:2px}
+  .hstat-empty{font-size:12px;color:var(--muted);text-align:center;padding:10px 0}
   .skillbtn{margin-left:8px;border:none;background:var(--accent-soft);color:var(--accent-dk);font-family:inherit;font-weight:800;font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap}
   .skillbtn:active{transform:scale(.95)}
   .sk-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:26px 6px;line-height:1.7}
@@ -524,6 +545,7 @@
 
 <main>
   <div class="hero-stat" id="heroStat"></div>
+  <div class="hstat-wrap" id="heroStatCards"></div>
   <div class="toolbar">
     <div class="search">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -760,15 +782,19 @@
   // （同数なら「採用」を優先＝より具体的なテーマを優先）。
   var RECRUIT_THEME_KW=['採用','採用活動','中途採用','新卒採用','採用戦略','採用マーケティング','面接','選考','recruiting','recruitment'];
   var HR_THEME_KW=['人事','human resource','human resources',' hr ','タレントマネジメント','talent management',
-    '人材育成','人材開発','人材戦略','人材マネジメント','組織開発','人事評価','評価制度','人事制度'];
+    '人材育成','人材開発','人材戦略','人材マネジメント','組織開発','人事評価','評価制度','人事制度',
+    // 261122追記：「チームとか組織については人事タブへ」という依頼で、チーム・組織づくり系も人事テーマに含める
+    'チーム','チームビルディング','チームマネジメント','チーム作り','チームづくり','組織','組織づくり','組織論','組織文化','組織変革','組織運営','組織マネジメント'];
   function themeFilterKeyOf(b){
     var g = classifyBook(b);
-    if(g !== 'business') return g;
     var hay=((b.catz||'')+' '+(b.title||'')+' '+(b.desc||'')).toLowerCase();
     var rScore=0, hScore=0;
     for(var i=0;i<RECRUIT_THEME_KW.length;i++){ if(kwHit(hay, RECRUIT_THEME_KW[i])) rScore++; }
     for(var j=0;j<HR_THEME_KW.length;j++){ if(kwHit(hay, HR_THEME_KW[j])) hScore++; }
-    if(rScore===0 && hScore===0) return 'business';
+    // 261122追記：「チームとか組織については人事タブへ」という依頼を受け、
+    // 人事/採用のキーワードが明確に当たる本は、classifyBookの判定ジャンルが
+    // business（経営）以外（自己啓発・教養など）でも人事/採用テーマを優先する。
+    if(rScore===0 && hScore===0) return g;
     return rScore>=hScore ? 'saiyo' : 'hr';
   }
   // 絞り込みチップの並び順。SKILLSの「ビジネス・経営」の直後に「人事」「採用」を独立表示する
@@ -1679,6 +1705,39 @@
   }
   function genreFilterFor(tab){ return (state.genreFilter && state.genreFilter[tab]) || ""; }
 
+  // 261123：ISBN手入力／バーコード・カメラ読み取りの履歴を残す機能。
+  // 「本を追加」シートの開始時点（ISBNが確定した瞬間）で記録する。棚に追加したかどうかは問わない。
+  var SCANHIST_KEY = "dokusho_scanhistory_v1";
+  var SCANHIST_MAX = 100;
+  function loadScanHistory(){
+    try{ var raw=localStorage.getItem(SCANHIST_KEY); if(!raw) return []; var d=JSON.parse(raw); return Array.isArray(d&&d.items)?d.items:[]; }
+    catch(e){ return []; }
+  }
+  function saveScanHistory(items){
+    try{ localStorage.setItem(SCANHIST_KEY, JSON.stringify({v:1, items:items||[]})); }catch(e){}
+  }
+  // source: 'camera'（バーコード/カメラ読み取り）｜'manual'（手入力ISBN）
+  function pushScanHistory(isbn13, source){
+    var items=loadScanHistory();
+    items.unshift({ isbn:isbn13, source:source, at:Date.now(), title:"", cover:"" });
+    if(items.length>SCANHIST_MAX) items.length=SCANHIST_MAX;
+    saveScanHistory(items);
+    return items;
+  }
+  // 履歴の1件目（＝今回追加した分）に、見つかったタイトル・表紙を後から補完する
+  function fillScanHistoryMeta(isbn13, meta){
+    if(!meta) return;
+    var items=loadScanHistory();
+    for(var i=0;i<items.length;i++){
+      if(items[i].isbn===isbn13 && !items[i].title){
+        if(meta.title) items[i].title=meta.title;
+        if(meta.cover) items[i].cover=meta.cover;
+        saveScanHistory(items);
+        break;
+      }
+    }
+  }
+
   var state = { books: load(), tab:"want", q:"", view:"books", sortMode: loadSortMode(), genreFilter: loadGenreFilter(), doneMonthFilter:"" };
   state.books.forEach(ensureHistory);
 
@@ -2322,6 +2381,86 @@
     return '<div class="hshelf"><div class="hshelf-head"><span>'+ic('book')+yr+'年に読んだ本</span><span class="hshelf-n"><b>'+n+'</b>冊</span></div>'
       +'<div class="hshelf-body">'+svg+msg+'</div></div>';
   }
+  // 261123：ヒーローカード刷新（デザイン案C）用の3枚の白カード。
+  // ①読書ペースの推移（直近6か月の棒グラフ）
+  function buildPaceCard(books){
+    var buckets=computeRecentMonths(books,6);
+    var maxc=1; buckets.forEach(function(b){ if(b.count>maxc) maxc=b.count; });
+    var bars='', labels='';
+    buckets.forEach(function(b,i){
+      var h=Math.max(6, Math.round(b.count/maxc*100));
+      bars+='<div style="height:'+h+'%"'+(i===buckets.length-1?' class="cur"':'')+'></div>';
+      labels+='<span>'+esc(b.label)+'</span>';
+    });
+    return '<div class="hstat-card"><div class="hstat-h"><span class="hstat-dot"></span>読書ペースの推移（直近6か月）</div>'
+      +'<div class="hstat-bars">'+bars+'</div><div class="hstat-barlabels">'+labels+'</div></div>';
+  }
+  // ②ジャンルバランス（今年読んだ本の内訳。上位4ジャンル＋その他）
+  function buildGenreBalanceCard(books){
+    var yr=new Date().getFullYear();
+    var counts={}, total=0;
+    (books||[]).forEach(function(b){
+      if(doneYear(b)!==yr) return;
+      var g=classifyBook(b); counts[g]=(counts[g]||0)+1; total++;
+    });
+    var head='<div class="hstat-card"><div class="hstat-h"><span class="hstat-dot"></span>ジャンルバランス（今年'+total+'冊）</div>';
+    if(!total) return head+'<div class="hstat-empty">今年はまだ記録がありません</div></div>';
+    var arr=Object.keys(counts).map(function(k){ return {key:k, count:counts[k]}; }).sort(function(a,b){ return b.count-a.count; });
+    var top=arr.slice(0,4), restCount=0;
+    arr.slice(4).forEach(function(x){ restCount+=x.count; });
+    var stack='', legend='';
+    top.forEach(function(x){
+      var pct=x.count/total*100, sk=skillOf(x.key);
+      stack+='<div style="width:'+pct.toFixed(1)+'%;background:'+sk.color+'"></div>';
+      legend+='<span><i style="background:'+sk.color+'"></i>'+esc(sk.short||sk.label)+' '+Math.round(pct)+'%</span>';
+    });
+    if(restCount>0){
+      var pct2=restCount/total*100;
+      stack+='<div style="width:'+pct2.toFixed(1)+'%;background:var(--line)"></div>';
+      legend+='<span><i style="background:var(--line)"></i>その他 '+Math.round(pct2)+'%</span>';
+    }
+    return head+'<div class="hstat-stack">'+stack+'</div><div class="hstat-stack-legend">'+legend+'</div></div>';
+  }
+  // ③サマリー数値（累計読了・月平均・継続月数）
+  function firstDoneAt(books){
+    var min=null;
+    (books||[]).forEach(function(b){
+      ensureHistory(b).forEach(function(e){ if(e.status==='done' && e.at && (min===null||e.at<min)) min=e.at; });
+    });
+    return min;
+  }
+  function monthsBetween(aMs,bMs){
+    var a=new Date(aMs), b=new Date(bMs);
+    return Math.max(1, (b.getFullYear()-a.getFullYear())*12 + (b.getMonth()-a.getMonth()) + 1);
+  }
+  // 現在の月から遡って、1冊以上読んだ月が連続している数（今月はまだ0冊でも、月の途中なので
+  // 継続を途切れさせない。先月以前が連続して0冊になった時点で止める）
+  function computeStreakMonths(books){
+    function countForKey(key){ var c=0; (books||[]).forEach(function(b){ if(doneMonthKey(b)===key) c++; }); return c; }
+    var now=new Date(), y=now.getFullYear(), m=now.getMonth();
+    var curKey=y+'-'+String(m+1).padStart(2,'0');
+    var streak = countForKey(curKey)>0 ? 1 : 0;
+    m--; if(m<0){ m=11; y--; }
+    while(true){
+      var key=y+'-'+String(m+1).padStart(2,'0');
+      if(countForKey(key)>0){ streak++; m--; if(m<0){ m=11; y--; } } else break;
+    }
+    return streak;
+  }
+  function buildSummaryCard(books, totalDone){
+    var first=firstDoneAt(books);
+    var avg = (first && totalDone>0) ? (totalDone/monthsBetween(first, Date.now())) : 0;
+    var streak = computeStreakMonths(books);
+    return '<div class="hstat-card"><div class="hstat-kpis">'
+      +'<div class="hstat-kpi"><b>'+totalDone+'</b><span>累計読了</span></div>'
+      +'<div class="hstat-kpi"><b>'+(avg>0?avg.toFixed(1):'–')+'</b><span>月平均</span></div>'
+      +'<div class="hstat-kpi"><b>'+streak+'</b><span>継続月数</span></div>'
+      +'</div></div>';
+  }
+  function renderHeroStatCards(totalDone){
+    var el=document.getElementById("heroStatCards"); if(!el) return;
+    el.innerHTML = buildPaceCard(state.books) + buildGenreBalanceCard(state.books) + buildSummaryCard(state.books, totalDone);
+  }
   function nextMilestone(totalDone){
     var step = totalDone<50 ? 10 : totalDone<100 ? 25 : totalDone<500 ? 50 : 100;
     var prev = Math.floor(totalDone/step)*step;
@@ -2369,15 +2508,13 @@
       +'<div class="hbar-track"><i class="hbar-fill" style="width:'+barPct.toFixed(1)+'%"></i></div>'
       +'<div class="hbar-foot">'+footL+'<span>'+footR+'</span></div>'
       +'</div>';
-    var monthGauges = buildMonthGauges(computeRecentMonths(state.books, 3));
     el.innerHTML='<div class="hero-label">'+ic('calendar')+'今月読んだ本</div>'
       +'<div class="hero-num"><span class="hn-val">'+thisMonth+'</span>'+(goal>0?'<span class="hero-of">/ '+goal+'</span>':'')+'<small>冊</small></div>'
       +'<div class="hero-sub">'+sub+'</div>'
-      +gauge
-      +buildYearShelf(state.books)
-      +monthGauges;
+      +gauge;
     var gb=document.getElementById("goalBtn"); if(gb) gb.onclick=openGoalSheet;
     countUpHero(thisMonth);
+    renderHeroStatCards(totalDone);
   }
   // 今月の冊数を 0（または前回の値）から数え上げる。値が変わらない再描画ではアニメしない
   var HERO_PREV=-1, HERO_RAF=0;
@@ -2698,6 +2835,15 @@
       }
       h+='</div></div>';
     }
+    // 261123：「読みたい本」専用の期待度（★の優先度とは別軸・モチベーションの強さ）
+    if(b.status==="want"){
+      var ev0=b.expectLevel||0;
+      h+='<div class="detail-priority-wrap"><span class="dp-label">期待度</span><div class="detail-priority" id="detailExpect">';
+      for(var ei=1; ei<=5; ei++){
+        h+='<span class="priority-star'+(ei<=ev0?" filled":"")+'" data-expect="'+ei+'" aria-label="期待度'+ei+'">'+(ei<=ev0?"★":"☆")+'</span>';
+      }
+      h+='</div></div>';
+    }
     h+='<div id="skPrev">'+bizPreview(b)+'</div>';
     h+='<h2>棚を移動</h2><div class="shelf-choices">';
     STATUSES.forEach(function(s){
@@ -2735,6 +2881,22 @@
             se.textContent = sn<=pv ? "★" : "☆";
           });
           render();
+        };
+      });
+    }
+    var detailExpect=document.getElementById("detailExpect");
+    if(detailExpect){
+      Array.prototype.forEach.call(detailExpect.querySelectorAll(".priority-star"),function(starEl){
+        starEl.onclick=function(){
+          var n=parseInt(starEl.dataset.expect,10);
+          b.expectLevel=(b.expectLevel||0)===n ? 0 : n;
+          save();
+          var ev=b.expectLevel||0;
+          Array.prototype.forEach.call(detailExpect.querySelectorAll(".priority-star"),function(se){
+            var sn=parseInt(se.dataset.expect,10);
+            se.classList.toggle("filled", sn<=ev);
+            se.textContent = sn<=ev ? "★" : "☆";
+          });
         };
       });
     }
@@ -3049,8 +3211,57 @@
     };
   }
 
+  // 261123：ISBN手入力／バーコード・カメラ読み取りの履歴一覧。「本を追加」シートから開く。
+  // タップすると、その場でもう一度同じISBNを検索し直せる（棚に追加したかどうかは問わない記録なので、
+  // 見つからなかった・結局追加しなかった本も再検索の起点として使える）。
+  function fmtScanWhen(at){
+    var d=new Date(at), now=new Date();
+    var sameDay = d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && d.getDate()===now.getDate();
+    var hh=("0"+d.getHours()).slice(-2), mm=("0"+d.getMinutes()).slice(-2);
+    if(sameDay) return "今日 "+hh+":"+mm;
+    return (d.getMonth()+1)+"/"+d.getDate()+" "+hh+":"+mm;
+  }
+  function openScanHistorySheet(){
+    var items=loadScanHistory();
+    var h='<div class="grip"></div><h2>'+ic('camera')+'検索・読み取り履歴</h2>';
+    h+='<div class="cr-note">ISBNを手入力または、バーコード/カメラで読み取った履歴です（棚に追加したかどうかは問いません）。タップするともう一度検索できます。</div>';
+    if(!items.length){
+      h+='<div class="searching">まだ履歴がありません</div>';
+    } else {
+      h+='<div id="shBox"></div>';
+    }
+    h+='<button class="btn ghost" id="shClearBtn">履歴を削除</button>';
+    h+='<button class="btn ghost" id="shCloseBtn">閉じる</button>';
+    openSheet(h);
+    document.getElementById("shCloseBtn").onclick=closeSheet;
+    var clearBtn=document.getElementById("shClearBtn");
+    if(clearBtn){
+      clearBtn.onclick=function(){
+        if(!items.length){ toast("履歴はありません"); return; }
+        saveScanHistory([]); toast("履歴を削除しました"); openScanHistorySheet();
+      };
+    }
+    var box=document.getElementById("shBox");
+    if(box){
+      items.forEach(function(it){
+        var row=document.createElement("div"); row.className="res";
+        var cov=document.createElement("div"); cov.className="rescover";
+        cov.style.cssText="width:44px;height:62px;flex:0 0 auto;border-radius:6px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent-dk)";
+        cov.innerHTML = it.source==='camera' ? ic('camera') : ic('pencil');
+        row.appendChild(cov);
+        var d=document.createElement("div"); d.className="resinfo";
+        var srcLabel = it.source==='camera' ? 'カメラ読み取り' : '手入力';
+        d.innerHTML='<div class="restitle">'+esc(it.title||("ISBN "+it.isbn))+'</div>'
+          +'<div class="resmeta">'+esc(srcLabel)+' ／ '+esc(fmtScanWhen(it.at))+(it.title?(' ／ ISBN '+esc(it.isbn)):'')+'</div>';
+        row.appendChild(d);
+        row.onclick=function(){ closeSheet(); openAddSheet(false, it.isbn, 'history'); };
+        box.appendChild(row);
+      });
+    }
+  }
+
   /* ---------- Add sheet: camera + title/ISBN search ---------- */
-  function openAddSheet(focusSearch, prefillIsbn){
+  function openAddSheet(focusSearch, prefillIsbn, prefillSource){
     var h='<div class="grip"></div><h2>本を追加</h2>';
     h+='<button class="btn primary" id="camBtn">'+ic('camera')+'カメラでISBNを読み取る</button>';
     h+='<div class="or"><span>または</span></div>';
@@ -3063,9 +3274,11 @@
     h+='<div style="text-align:center;margin-top:4px"><a href="#" id="aiLink" style="font-size:12px;color:var(--muted);text-decoration:underline">'+ic("sparkles")+'AIで内容から自動分類（Gemini APIキー）</a></div>';
     h+='<div style="text-align:center;margin-top:4px"><a href="#" id="crLink" style="font-size:12px;color:var(--muted);text-decoration:underline">'+ic("refresh")+'全部の表紙を取り直す</a></div>';
     h+='<div style="text-align:center;margin-top:4px"><a href="#" id="drLink" style="font-size:12px;color:var(--muted);text-decoration:underline">'+ic("refresh")+'カテゴリ・説明文をまとめて取得</a></div>';
+    h+='<div style="text-align:center;margin-top:4px"><a href="#" id="shLink" style="font-size:12px;color:var(--muted);text-decoration:underline">'+ic("camera")+'検索・読み取り履歴</a></div>';
     openSheet(h);
     document.getElementById("crLink").onclick=function(e){ e.preventDefault(); openCoverRefreshSheet(); };
     document.getElementById("drLink").onclick=function(e){ e.preventDefault(); openDescRefreshSheet(); };
+    document.getElementById("shLink").onclick=function(e){ e.preventDefault(); openScanHistorySheet(); };
     var inp=document.getElementById("qInput");
     document.getElementById("camBtn").onclick=function(){ closeSheet(); startScan(); };
     document.getElementById("cancelBtn").onclick=closeSheet;
@@ -3083,14 +3296,16 @@
       try{ if(v){ localStorage.setItem("gb_api_key",v); toast("APIキーを保存しました"); } else { localStorage.removeItem("gb_api_key"); toast("APIキーを解除しました"); } }
       catch(err){ toast("保存に失敗しました"); }
     };
-    document.getElementById("searchBtn").onclick=runSearch;
-    inp.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); runSearch(); } });
+    document.getElementById("searchBtn").onclick=function(){ runSearch('manual'); };
+    inp.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); runSearch('manual'); } });
     if(focusSearch){ setTimeout(function(){ try{inp.focus();}catch(e){} },180); }
-    if(prefillIsbn){ inp.value=prefillIsbn; runSearch(); }
+    if(prefillIsbn){ inp.value=prefillIsbn; runSearch(prefillSource||'camera'); }
 
     function reopen(){ openAddSheet(false); var q2=document.getElementById("qInput"); if(q2){ q2.value=inp.value; } }
 
-    function runSearch(){
+    // 261123：source は 'manual'（検索欄にISBNを手入力）／'camera'（バーコード/カメラ読み取り経由の
+    // 自動検索＝onDecode→openAddSheet(false, isbn)）／'history'（履歴一覧からの再検索＝二重記録を避ける）。
+    function runSearch(source){
       var raw=(inp.value||"").trim(); if(!raw){ inp.focus(); return; }
       var digits=normIsbn(raw);
       var box=document.getElementById("results");
@@ -3101,9 +3316,10 @@
       if(looksNumeric(raw) && isBookIsbn(digits)){
         var isbn13=digits.length===10?isbn10to13(digits):digits;
         box.innerHTML='<div class="searching"><span class="spinner"></span> 候補を検索中…</div>';
+        if(source!=='history') pushScanHistory(isbn13, source==='camera'?'camera':'manual');
         getIsbnCandidates(isbn13).then(function(list){
           busy(false);
-          if(list && list.length){ renderResults(box,list,isbn13); }
+          if(list && list.length){ fillScanHistoryMeta(isbn13, list[0]); renderResults(box,list,isbn13); }
           else { presentFound({isbn:isbn13},{back:reopen}); }
         }).catch(function(){ busy(false); presentFound({isbn:isbn13},{back:reopen}); });
         return;
@@ -3376,7 +3592,7 @@
     rd.readAsText(f);
   });
 
-  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, doneYear:doneYear, computeYearlyTotals:computeYearlyTotals, buildYearGauges:buildYearGauges, computeRecentMonths:computeRecentMonths, buildMonthGauges:buildMonthGauges, nextMilestone:nextMilestone, lastDoneEntry:lastDoneEntry, render:render, coverSessionCache:coverSessionCache, coverCacheKey:coverCacheKey, sortKeyFor:sortKeyFor, openDescRefreshSheet:openDescRefreshSheet, ensureDesc:ensureDesc, fetchGoogleByIsbn:fetchGoogleByIsbn, gbFetch:gbFetch, setHeroMotionVariant:setHeroMotionVariant, countUpHero:countUpHero, renderHeroStat:renderHeroStat, getExtRecs:getExtRecs, loadExtRecs:loadExtRecs, extRecsNeedRefresh:extRecsNeedRefresh, fetchExtRecsCategoryBased:fetchExtRecsCategoryBased, fetchExtRecsAI:fetchExtRecsAI, genreFilterFor:genreFilterFor, loadGenreFilter:loadGenreFilter, renderGenreFilterBox:renderGenreFilterBox, getBizRanking:getBizRanking, fetchBizRanking:fetchBizRanking, loadBizRanking:loadBizRanking, bizRankNeedsRefresh:bizRankNeedsRefresh, bizRankMonthKey:bizRankMonthKey };
+  window.__dokusho={ state:state, lookupBook:lookupBook, searchBooks:searchBooks, presentFound:presentFound, openAddSheet:openAddSheet, isBookIsbn:isBookIsbn, isbn10to13:isbn10to13, normIsbn:normIsbn, volToMeta:volToMeta, coverNode:coverNode, gotoTab:gotoTab, decodeFromImage:decodeFromImage, classifyBook:classifyBook, computeSkills:computeSkills, openSkillSheet:openSkillSheet, SKILLS:SKILLS, mapToBizSkill:mapToBizSkill, computeBizCoverage:computeBizCoverage, BIZ_FLAT:BIZ_FLAT, bookLevel:bookLevel, skillPctFromBooks:skillPctFromBooks, bizPreview:bizPreview, presentFound:presentFound, importBooks:importBooks, openBookMenu:openBookMenu, applyAI:applyAI, aiClassify:aiClassify, geminiKey:geminiKey, openSkillDetail:openSkillDetail, applyViewMode:applyViewMode, ensureHistory:ensureHistory, pushHistory:pushHistory, computeMonthly:computeMonthly, doneMonthKey:doneMonthKey, historyHtml:historyHtml, doneYear:doneYear, computeYearlyTotals:computeYearlyTotals, buildYearGauges:buildYearGauges, computeRecentMonths:computeRecentMonths, buildMonthGauges:buildMonthGauges, nextMilestone:nextMilestone, lastDoneEntry:lastDoneEntry, render:render, coverSessionCache:coverSessionCache, coverCacheKey:coverCacheKey, sortKeyFor:sortKeyFor, openDescRefreshSheet:openDescRefreshSheet, ensureDesc:ensureDesc, fetchGoogleByIsbn:fetchGoogleByIsbn, gbFetch:gbFetch, setHeroMotionVariant:setHeroMotionVariant, countUpHero:countUpHero, renderHeroStat:renderHeroStat, getExtRecs:getExtRecs, loadExtRecs:loadExtRecs, extRecsNeedRefresh:extRecsNeedRefresh, fetchExtRecsCategoryBased:fetchExtRecsCategoryBased, fetchExtRecsAI:fetchExtRecsAI, genreFilterFor:genreFilterFor, loadGenreFilter:loadGenreFilter, renderGenreFilterBox:renderGenreFilterBox, getBizRanking:getBizRanking, fetchBizRanking:fetchBizRanking, loadBizRanking:loadBizRanking, bizRankNeedsRefresh:bizRankNeedsRefresh, bizRankMonthKey:bizRankMonthKey, themeFilterKeyOf:themeFilterKeyOf, loadScanHistory:loadScanHistory, saveScanHistory:saveScanHistory, pushScanHistory:pushScanHistory, openScanHistorySheet:openScanHistorySheet, buildPaceCard:buildPaceCard, buildGenreBalanceCard:buildGenreBalanceCard, buildSummaryCard:buildSummaryCard, computeStreakMonths:computeStreakMonths, firstDoneAt:firstDoneAt };
 
   render();
 })();
