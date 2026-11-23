@@ -1287,20 +1287,26 @@
     });
     return buckets;
   }
+  // 261123：月別 読了冊数グラフを棒グラフ→折れ線グラフへ変更（ヒーローの読書ペース推移と統一）。
+  // data-monthのタップ領域とactiveKeyによるハイライトは従来通り維持（render()側のクリック配線はそのまま）。
   function buildMonthlyChart(buckets, activeKey){
     var maxc=1; buckets.forEach(function(b){ if(b.count>maxc) maxc=b.count; });
-    var n=buckets.length, w=320, h=136, padB=22, padT=14, gap=4;
-    var barW=(w-gap*(n-1))/n;
+    var n=buckets.length, w=320, h=136, padT=26, padB=22, padX=10;
+    var innerH=h-padT-padB, stepX=n>1 ? (w-padX*2)/(n-1) : 0;
+    var pts=buckets.map(function(b,i){
+      return { x: padX+i*stepX, y: padT+innerH*(1-(b.count/maxc)), b:b };
+    });
+    var lineColor=getVar('--accent'), curColor=getVar('--accent-dk'), inkColor=getVar('--ink'), mutedColor=getVar('--muted');
+    var path=pts.map(function(p,i){ return (i===0?'M':'L')+p.x.toFixed(1)+' '+p.y.toFixed(1); }).join(' ');
     var svg='<svg viewBox="0 0 '+w+' '+h+'" width="100%" style="max-width:360px;display:block;margin:0 auto">';
-    buckets.forEach(function(b,i){
-      var bh=(h-padT-padB)*(b.count/maxc);
-      var x=i*(barW+gap), y=h-padB-Math.max(bh,b.count>0?4:0);
-      var barH=Math.max(bh,b.count>0?4:1);
-      var isCur=activeKey && b.key===activeKey;
-      svg+='<g data-month="'+b.key+'" style="cursor:pointer">';
-      svg+='<rect x="'+x.toFixed(1)+'" y="'+(h-padB-barH).toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+barH.toFixed(1)+'" rx="3" fill="'+(b.count>0?getVar(isCur?"--accent-dk":"--accent"):getVar("--line"))+'"'+(isCur?' stroke="'+getVar("--accent-dk")+'" stroke-width="1.5"':'')+'/>';
-      if(b.count>0){ svg+='<text x="'+(x+barW/2).toFixed(1)+'" y="'+(h-padB-barH-4).toFixed(1)+'" font-size="9.5" font-weight="800" fill="'+getVar("--accent-dk")+'" text-anchor="middle">'+b.count+'</text>'; }
-      svg+='<text x="'+(x+barW/2).toFixed(1)+'" y="'+(h-8).toFixed(1)+'" font-size="8" font-weight="'+(isCur?'800':'400')+'" fill="'+(isCur?getVar("--accent-dk"):getVar("--muted"))+'" text-anchor="middle">'+(b.showYear?"'"+String(b.year).slice(2)+"/":"")+b.label+'</text>';
+    svg+='<path d="'+path+'" fill="none" stroke="'+lineColor+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+    pts.forEach(function(p,i){
+      var isCur=activeKey && p.b.key===activeKey;
+      svg+='<g data-month="'+p.b.key+'" style="cursor:pointer">';
+      svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="11" fill="transparent"/>';
+      svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isCur?4:3)+'" fill="'+(isCur?curColor:'#fff')+'" stroke="'+lineColor+'" stroke-width="1.8"/>';
+      if(p.b.count>0){ svg+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" font-size="9.5" font-weight="800" fill="'+(isCur?curColor:inkColor)+'" text-anchor="middle">'+p.b.count+'</text>'; }
+      svg+='<text x="'+p.x.toFixed(1)+'" y="'+(h-6).toFixed(1)+'" font-size="8" font-weight="'+(isCur?'800':'400')+'" fill="'+(isCur?curColor:mutedColor)+'" text-anchor="middle">'+(p.b.showYear?"'"+String(p.b.year).slice(2)+"/":"")+esc(p.b.label)+'</text>';
       svg+='</g>';
     });
     svg+='</svg>';
@@ -2222,7 +2228,8 @@
         var dmfLabel = dmf ? dmf.split("-")[0]+"年"+parseInt(dmf.split("-")[1],10)+"月" : "";
         mb.innerHTML='<div class="cov-wrap mo-top"><div class="cov-head"><span class="cov-title">'+ic("calendar")+'月別 読了冊数</span><span class="cov-rate">直近12か月</span></div>'
           +buildMonthlyChart(computeMonthly(state.books,12), dmf)+'</div>'
-          +(dmf ? '<div class="mo-filter-note">'+esc(dmfLabel)+'の本だけ表示中　<a href="#" id="moFilterClear">すべて表示に戻す</a></div>' : '');
+          +(dmf ? '<div class="mo-filter-note">'+esc(dmfLabel)+'の本だけ表示中　<a href="#" id="moFilterClear">すべて表示に戻す</a></div>' : '')
+          +'<div style="margin-top:10px">'+buildGenreBalanceCard(state.books, dmf, dmfLabel)+'</div>';
         Array.prototype.forEach.call(mb.querySelectorAll("[data-month]"),function(el){
           el.onclick=function(){
             var k=el.dataset.month;
@@ -2399,6 +2406,8 @@
   }
   // 261123：ヒーローカード刷新（デザイン案C）用の3枚の白カード。
   // ①読書ペースの推移（直近6か月の折れ線グラフ。261123：棒グラフ→折れ線へ、数値ラベル付きで変更）
+  // ※月タップでジャンル内訳を切り替える機能は「読んだ本」タブの月別グラフ側の依頼だったため、
+  // 　ヒーローカードのこちらは非インタラクティブな表示のまま（261123訂正）。
   function buildPaceCard(books){
     var buckets=computeRecentMonths(books,6);
     var maxc=1; buckets.forEach(function(b){ if(b.count>maxc) maxc=b.count; });
@@ -2420,16 +2429,17 @@
     svg+='</svg>';
     return '<div class="hstat-card"><div class="hstat-h"><span class="hstat-dot"></span>読書ペースの推移（直近6か月）</div>'+svg+'</div>';
   }
-  // ②ジャンルバランス（今年読んだ本の内訳。上位4ジャンル＋その他）
-  function buildGenreBalanceCard(books){
-    var yr=new Date().getFullYear();
+  // ②ジャンルバランス（選択中の月、または今年読んだ本の内訳。上位4ジャンル＋その他）
+  function buildGenreBalanceCard(books, selectedKey, selectedLabel){
     var counts={}, total=0;
     (books||[]).forEach(function(b){
-      if(doneYear(b)!==yr) return;
+      var match = selectedKey ? (doneMonthKey(b)===selectedKey) : (doneYear(b)===new Date().getFullYear());
+      if(!match) return;
       var g=classifyBook(b); counts[g]=(counts[g]||0)+1; total++;
     });
-    var head='<div class="hstat-card"><div class="hstat-h"><span class="hstat-dot"></span>ジャンルバランス（今年'+total+'冊）</div>';
-    if(!total) return head+'<div class="hstat-empty">今年はまだ記録がありません</div></div>';
+    var titleSuffix = selectedKey ? (esc(selectedLabel)+' '+total+'冊') : ('今年'+total+'冊');
+    var head='<div class="hstat-card"><div class="hstat-h"><span class="hstat-dot"></span>ジャンルバランス（'+titleSuffix+'）</div>';
+    if(!total) return head+'<div class="hstat-empty">'+(selectedKey?'この月はまだ記録がありません':'今年はまだ記録がありません')+'</div></div>';
     var arr=Object.keys(counts).map(function(k){ return {key:k, count:counts[k]}; }).sort(function(a,b){ return b.count-a.count; });
     var top=arr.slice(0,4), restCount=0;
     arr.slice(4).forEach(function(x){ restCount+=x.count; });
