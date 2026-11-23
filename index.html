@@ -629,6 +629,9 @@
     trophy:'<path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 5H4v1a4 4 0 0 0 4 4"/><path d="M17 5h3v1a4 4 0 0 1-4 4"/><path d="M12 14v3"/><path d="M9 20h6"/><path d="M9.5 20v-1.5a2.5 2.5 0 0 1 5 0V20"/>'
   };
   function ic(n){ return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||'')+'</svg>'; }
+  // 261123：優先度★の段階数。ユーザーから「レビュー（優先度★）は3個にしたい」と依頼を受け、
+  // 5段階から3段階に変更。カード・詳細シートどちらもこの定数を参照するので、ここだけ直せばよい。
+  var PRIORITY_MAX = 3;
   var STATUSES = [
     {key:"want",    label:"読みたい本", color:getVar("--want"),    icon:ic("bookmark")},
     {key:"stack",   label:"積読本",     color:getVar("--stack"),   icon:ic("stack")},
@@ -1749,6 +1752,15 @@
     });
     if(changed) save();
   })();
+  // 261123：優先度★を5段階→3段階に変更したので、既存データで4・5が入っている本は3に丸める
+  // （4・5だった本は「最優先」だった可能性が高いため、切り捨てず3＝最大値に寄せる）。
+  (function clampPriorityMax(){
+    var changed=false;
+    state.books.forEach(function(b){
+      if(b.priority && b.priority>PRIORITY_MAX){ b.priority=PRIORITY_MAX; changed=true; }
+    });
+    if(changed) save();
+  })();
 
   function load(){
     try{ var raw=localStorage.getItem(STORE_KEY); if(!raw) return []; var d=JSON.parse(raw); return Array.isArray(d.books)?d.books:(Array.isArray(d)?d:[]); }
@@ -2677,7 +2689,7 @@
     if(b.status==="want" || b.status==="stack"){
       var prow=document.createElement("div"); prow.className="priority-row";
       var pv=b.priority||0;
-      for(var pi=1; pi<=5; pi++){
+      for(var pi=1; pi<=PRIORITY_MAX; pi++){
         (function(n){
           var sEl=document.createElement("span");
           sEl.className="priority-star"+(n<=pv?" filled":"");
@@ -2839,7 +2851,7 @@
     if(b.status==="want" || b.status==="stack"){
       var pv0=b.priority||0;
       h+='<div class="detail-priority-wrap"><span class="dp-label">優先度</span><div class="detail-priority" id="detailPriority">';
-      for(var pi=1; pi<=5; pi++){
+      for(var pi=1; pi<=PRIORITY_MAX; pi++){
         h+='<span class="priority-star'+(pi<=pv0?" filled":"")+'" data-star="'+pi+'" aria-label="優先度'+pi+'">'+(pi<=pv0?"★":"☆")+'</span>';
       }
       h+='</div></div>';

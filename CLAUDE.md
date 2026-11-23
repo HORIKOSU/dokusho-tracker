@@ -1,6 +1,6 @@
 # Booskill（読書管理ツール）｜Claude Code 引き継ぎ用 CLAUDE.md
 
-最終更新：2026-11-23（§5-14 チーム・組織系キーワードを「人事」テーマに統合／§5-15 検索/読み取り履歴（「期待度」★は優先度★に統合・撤去済み）／§5-16 ヒーローカード刷新（分割カード型）を追加・本番反映済み。GitHub Pushはユーザー側で実施待ち）
+最終更新：2026-11-23（§5-14 チーム・組織系キーワードを「人事」テーマに統合／§5-15 検索/読み取り履歴（「期待度」★は優先度★に統合・撤去済み）／§5-16a 優先度★を5→3段階に変更／§5-16 ヒーローカード刷新（分割カード型）を追加・本番反映済み。GitHub Pushはユーザー側で実施待ち）
 公開URL：https://horikosu.github.io/dokusho-tracker/
 リポジトリ：https://github.com/HORIKOSU/dokusho-tracker（Public／GitHub Pages・main・/root）
 
@@ -46,7 +46,7 @@
 | `dokusho_bizranking_v1` | 経営者向けビジネス書ランキングのキャッシュ（`{monthKey, items, at}`。月が変わると作り直す） |
 | `dokusho_scanhistory_v1` | ISBN手入力／バーコード・カメラ読み取りの履歴（`{v:1, items:[{isbn,title,cover,source,at}]}`。最大100件・261123〜） |
 
-book の主なフィールド：`id, isbn, title, author, publisher, pubdate, cover, status('want'|'stack'|'reading'|'done'), addedAt, updatedAt, source, memo, rating, priority(1〜5・want/stackのみ), history:[{status,at}], catz, desc, pages, genre, bizskill`
+book の主なフィールド：`id, isbn, title, author, publisher, pubdate, cover, status('want'|'stack'|'reading'|'done'), addedAt, updatedAt, source, memo, rating, priority(1〜3・want/stackのみ・261123に5→3段階へ変更), history:[{status,at}], catz, desc, pages, genre, bizskill`
 - `expectLevel`は261123に一度追加したが同日中に撤去（§5-15参照）。読み込み時に`priority`へ自動移行されるため、もし手元の古いバックアップJSONにこのフィールドが残っていても問題ない。
 - `history` は最大200件。無い古いデータは `ensureHistory` が `updatedAt` から補完する。
 - 「読み終えた日」＝ history の最後の `done` エントリ（`lastDoneEntry` / `doneMonthKey(b)` → "YYYY-MM" / `doneYear(b)`）。月間・年間の集計はこれを基準にする。
@@ -72,7 +72,7 @@ book の主なフィールド：`id, isbn, title, author, publisher, pubdate, co
   - 「最新の1冊だけ特別な動き」は廃止（過去に最新1冊だけ動いて見えた不具合の原因だった）。全冊同じ動きにする。
 
 ### 5-3. 一覧・詳細
-- 優先度★(1〜5)：want/stack のカードと詳細で入力。カード上の変更は即保存するが**その場では並び替えず**、「並び替える」確認バー(`#resortBar`)を出す。並び順は★降順→新規登録が新しい順。
+- 優先度★(1〜3・261123に5段階から変更／`PRIORITY_MAX`)：want/stack のカードと詳細で入力。カード上の変更は即保存するが**その場では並び替えず**、「並び替える」確認バー(`#resortBar`)を出す。並び順は★降順→新規登録が新しい順。
 - 詳細シート（`openBookMenu`）：発売日・ISBN・履歴など。背景タップで閉じるのは click のみ。「表紙を再取得」ボタンあり。
 
 ### 5-4. 表紙の解決（`coverNode` / `resolveCoverUrl`）
@@ -171,6 +171,14 @@ book の主なフィールド：`id, isbn, title, author, publisher, pubdate, co
   - 記録タイミング：ISBN検索の実行時点（`runSearch`のISBN分岐）。棚に追加したかどうかは問わない。`openAddSheet(focusSearch, prefillIsbn, prefillSource)`の第3引数`prefillSource`で記録元を区別（カメラ読み取り＝`onDecode`→`openAddSheet(false, isbn)`は省略時'camera'扱い、手入力＝検索ボタン/Enter送信は'manual'、履歴一覧からの再検索は'history'＝二重記録を避けるため記録しない）。
   - 履歴一覧（`openScanHistorySheet`）：タイトル（取得できていれば）・記録元・日時を表示。タップでそのISBNを再検索。「履歴を削除」で全削除可能。
 - Playwrightで検証：優先度★1本化後の表示・既存値の保持、`expectLevel`からの移行（未設定時のみ引き継ぎ・設定済みは上書きしない）、手入力/カメラ読み取り双方での履歴記録と記録元の区別、履歴一覧からの再検索で二重記録しないこと、を確認済み。
+- 261123に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
+
+### 5-16a. 優先度★を5段階→3段階に変更（261123）
+- ユーザーから「レビューは3個にしたい」（＝優先度★の段階数を3つにしたい）と依頼。
+- `PRIORITY_MAX`定数（値3）を新設し、カード（`cardEl`の`.priority-row`）・詳細シート（`openBookMenu`の`#detailPriority`）両方のループ上限をこの定数に統一（直書きの`5`をやめた）。
+- 既存データで優先度4・5だった本は、読み込み時の一回限りの移行処理（`clampPriorityMax`）で3に丸める（切り捨てず最大値に寄せる）。
+- `updateCardPriorityUI`（カードタップ時の★再描画）は実際にDOM上にある`.priority-star`の数をそのまま使う作りだったため、この変更だけで対応できた。
+- Playwrightで検証：カード・詳細シートとも★3つ表示、既存の優先度5→3への丸め込み、2→3への変更、同じ星の再タップでの解除、を確認済み。
 - 261123に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
 
 ### 5-16. ヒーローカード刷新：分割カード型（デザイン案C）（261123）
