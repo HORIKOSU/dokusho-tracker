@@ -1,6 +1,6 @@
 # Booskill（読書管理ツール）｜Claude Code 引き継ぎ用 CLAUDE.md
 
-最終更新：2026-11-23（§5-14 チーム・組織系キーワードを「人事」テーマに統合／§5-15 読みたい本の「期待度」★・検索/読み取り履歴／§5-16 ヒーローカード刷新（分割カード型）を追加・本番反映済み。GitHub Pushはユーザー側で実施待ち）
+最終更新：2026-11-23（§5-14 チーム・組織系キーワードを「人事」テーマに統合／§5-15 検索/読み取り履歴（「期待度」★は優先度★に統合・撤去済み）／§5-16 ヒーローカード刷新（分割カード型）を追加・本番反映済み。GitHub Pushはユーザー側で実施待ち）
 公開URL：https://horikosu.github.io/dokusho-tracker/
 リポジトリ：https://github.com/HORIKOSU/dokusho-tracker（Public／GitHub Pages・main・/root）
 
@@ -46,7 +46,8 @@
 | `dokusho_bizranking_v1` | 経営者向けビジネス書ランキングのキャッシュ（`{monthKey, items, at}`。月が変わると作り直す） |
 | `dokusho_scanhistory_v1` | ISBN手入力／バーコード・カメラ読み取りの履歴（`{v:1, items:[{isbn,title,cover,source,at}]}`。最大100件・261123〜） |
 
-book の主なフィールド：`id, isbn, title, author, publisher, pubdate, cover, status('want'|'stack'|'reading'|'done'), addedAt, updatedAt, source, memo, rating, priority(1〜5・want/stackのみ), expectLevel(1〜5・wantのみ・261123〜「期待度」), history:[{status,at}], catz, desc, pages, genre, bizskill`
+book の主なフィールド：`id, isbn, title, author, publisher, pubdate, cover, status('want'|'stack'|'reading'|'done'), addedAt, updatedAt, source, memo, rating, priority(1〜5・want/stackのみ), history:[{status,at}], catz, desc, pages, genre, bizskill`
+- `expectLevel`は261123に一度追加したが同日中に撤去（§5-15参照）。読み込み時に`priority`へ自動移行されるため、もし手元の古いバックアップJSONにこのフィールドが残っていても問題ない。
 - `history` は最大200件。無い古いデータは `ensureHistory` が `updatedAt` から補完する。
 - 「読み終えた日」＝ history の最後の `done` エントリ（`lastDoneEntry` / `doneMonthKey(b)` → "YYYY-MM" / `doneYear(b)`）。月間・年間の集計はこれを基準にする。
 - 表紙の差し替えでは `updatedAt` を触らない（並び順や読了日に影響させない）。
@@ -162,14 +163,14 @@ book の主なフィールド：`id, isbn, title, author, publisher, pubdate, co
 - Playwrightで検証：チーム・組織本が人事に、本来の採用本が採用に、純粋な経営書が経営のまま、を確認済み。
 - 261123に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
 
-### 5-15. 読みたい本の「期待度」★・検索/読み取り履歴（261123）
+### 5-15. 読みたい本の「期待度」★（→優先度★に統合・撤去）・検索/読み取り履歴（261123）
 - ユーザーから「読みたい本のレベルを登録できるようにしたい」「検索や読み取り履歴をつけたい」と依頼。AskUserQuestionで仕様を確認した上で実装。
-- **期待度★**：詳細シート（`openBookMenu`）の「優先度★」の下に、読みたい本（`status==='want'`）のときだけ表示される新しい★5段階「期待度」を追加。フィールドは`b.expectLevel`（0〜5）。既存の優先度★とは独立した別軸（期待度・モチベーションの強さ）。UIは`#detailExpect`・`data-expect`属性で、優先度★と同じトグル式（同じ星をもう一度タップで解除）。
+- **期待度★→優先度★に統合（同日中に撤去）**：当初、詳細シートの「優先度★」の下に読みたい本専用の★5段階「期待度」（`b.expectLevel`）を別項目として追加したが、ユーザーから「期待度と優先度の2つは入っているので、1つにして」と指摘を受け、同日中に撤去。「優先度（既存のまま残す）」に一本化することで合意。`openBookMenu`から`#detailExpect`のUI・クリックハンドラを削除し、既存の`#detailPriority`（`b.priority`）だけに戻した。入力済みの`expectLevel`は、`priority`が未設定の場合だけ`priority`に引き継いだ上でフィールド自体を削除する一回限りの移行処理（`migrateExpectLevel`、読み込み時に自動実行）を追加済み。現在、読みたい本の星評価は「優先度★」の1種類のみ。
 - **検索・読み取り履歴**：ISBNの手入力、またはバーコード/カメラ読み取りのたびに記録する履歴機能。「本を追加」シート最下部の「検索・読み取り履歴」リンクから開く。
   - 保存先：`dokusho_scanhistory_v1`（`{v:1, items:[{isbn, title, cover, source:'manual'|'camera', at}]}`、最大100件、新しい順）。
   - 記録タイミング：ISBN検索の実行時点（`runSearch`のISBN分岐）。棚に追加したかどうかは問わない。`openAddSheet(focusSearch, prefillIsbn, prefillSource)`の第3引数`prefillSource`で記録元を区別（カメラ読み取り＝`onDecode`→`openAddSheet(false, isbn)`は省略時'camera'扱い、手入力＝検索ボタン/Enter送信は'manual'、履歴一覧からの再検索は'history'＝二重記録を避けるため記録しない）。
   - 履歴一覧（`openScanHistorySheet`）：タイトル（取得できていれば）・記録元・日時を表示。タップでそのISBNを再検索。「履歴を削除」で全削除可能。
-- Playwrightで検証：期待度★の5段階表示・保存・トグル解除・積読本には表示されないこと、手入力/カメラ読み取り双方での履歴記録と記録元の区別、履歴一覧からの再検索で二重記録しないこと、を確認済み。
+- Playwrightで検証：優先度★1本化後の表示・既存値の保持、`expectLevel`からの移行（未設定時のみ引き継ぎ・設定済みは上書きしない）、手入力/カメラ読み取り双方での履歴記録と記録元の区別、履歴一覧からの再検索で二重記録しないこと、を確認済み。
 - 261123に本番反映済み（チャット・Mac・Projectsの3か所）。GitHub Pushはユーザー側で実施待ち。
 
 ### 5-16. ヒーローカード刷新：分割カード型（デザイン案C）（261123）

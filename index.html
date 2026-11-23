@@ -1740,6 +1740,15 @@
 
   var state = { books: load(), tab:"want", q:"", view:"books", sortMode: loadSortMode(), genreFilter: loadGenreFilter(), doneMonthFilter:"" };
   state.books.forEach(ensureHistory);
+  // 261123：「期待度」★は優先度★と2つあって紛らわしいとの指摘を受け、優先度★に一本化して撤去。
+  // ごく短期間だけ存在したフィールドなので、入力済みの値があれば優先度側に引き継いでから消す。
+  (function migrateExpectLevel(){
+    var changed=false;
+    state.books.forEach(function(b){
+      if(b.expectLevel){ if(!b.priority) b.priority=b.expectLevel; delete b.expectLevel; changed=true; }
+    });
+    if(changed) save();
+  })();
 
   function load(){
     try{ var raw=localStorage.getItem(STORE_KEY); if(!raw) return []; var d=JSON.parse(raw); return Array.isArray(d.books)?d.books:(Array.isArray(d)?d:[]); }
@@ -2835,15 +2844,6 @@
       }
       h+='</div></div>';
     }
-    // 261123：「読みたい本」専用の期待度（★の優先度とは別軸・モチベーションの強さ）
-    if(b.status==="want"){
-      var ev0=b.expectLevel||0;
-      h+='<div class="detail-priority-wrap"><span class="dp-label">期待度</span><div class="detail-priority" id="detailExpect">';
-      for(var ei=1; ei<=5; ei++){
-        h+='<span class="priority-star'+(ei<=ev0?" filled":"")+'" data-expect="'+ei+'" aria-label="期待度'+ei+'">'+(ei<=ev0?"★":"☆")+'</span>';
-      }
-      h+='</div></div>';
-    }
     h+='<div id="skPrev">'+bizPreview(b)+'</div>';
     h+='<h2>棚を移動</h2><div class="shelf-choices">';
     STATUSES.forEach(function(s){
@@ -2881,22 +2881,6 @@
             se.textContent = sn<=pv ? "★" : "☆";
           });
           render();
-        };
-      });
-    }
-    var detailExpect=document.getElementById("detailExpect");
-    if(detailExpect){
-      Array.prototype.forEach.call(detailExpect.querySelectorAll(".priority-star"),function(starEl){
-        starEl.onclick=function(){
-          var n=parseInt(starEl.dataset.expect,10);
-          b.expectLevel=(b.expectLevel||0)===n ? 0 : n;
-          save();
-          var ev=b.expectLevel||0;
-          Array.prototype.forEach.call(detailExpect.querySelectorAll(".priority-star"),function(se){
-            var sn=parseInt(se.dataset.expect,10);
-            se.classList.toggle("filled", sn<=ev);
-            se.textContent = sn<=ev ? "★" : "☆";
-          });
         };
       });
     }
